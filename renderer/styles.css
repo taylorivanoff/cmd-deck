@@ -127,8 +127,103 @@ body.platform-darwin .app-title {
 
 .titlebar-actions {
   display: flex;
-  gap: 2px;
+  align-items: center;
+  gap: 4px;
   -webkit-app-region: no-drag;
+}
+
+.titlebar-grid {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 2px;
+}
+
+.grid-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 2px 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-button);
+}
+
+.grid-label {
+  font-size: 9px;
+  font-weight: 650;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.grid-value {
+  width: 18px;
+  min-width: 18px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  text-align: center;
+  padding: 0;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.grid-value:focus {
+  color: var(--accent);
+}
+
+.grid-arrows {
+  display: flex;
+  flex-direction: column;
+  width: 14px;
+  height: 18px;
+  margin-left: 1px;
+}
+
+.grid-arrow {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  line-height: 0;
+  border-radius: 2px;
+}
+
+.grid-arrow:hover {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--text);
+}
+
+.grid-arrow:active {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
+}
+
+.grid-arrow:disabled {
+  opacity: 0.28;
+  cursor: default;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.grid-sep {
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.55;
+  line-height: 1;
+  padding: 0 1px;
 }
 
 .icon-btn {
@@ -448,6 +543,121 @@ body.dialog-page.platform-darwin {
   color: var(--text-secondary);
 }
 
+.shell-picker {
+  position: relative;
+}
+
+.shell-picker-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+}
+
+.shell-picker-trigger:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.shell-picker-trigger:focus,
+.shell-picker.is-open .shell-picker-trigger {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.shell-picker-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.shell-picker-name {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.shell-picker-path {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
+.shell-picker-caret {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.shell-picker.is-open .shell-picker-caret {
+  transform: rotate(180deg);
+}
+
+.shell-picker-menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+}
+
+.shell-picker-option {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.shell-picker-option:hover,
+.shell-picker-option.is-active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.shell-picker-option .shell-picker-name {
+  flex-shrink: 0;
+}
+
+.shell-picker-option .shell-picker-path {
+  flex: 1;
+}
+
 
 .field input[type="range"] {
   width: 100%;
@@ -596,6 +806,16 @@ body.dialog-page.platform-darwin {
   color: var(--accent);
 }
 
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.settings-actions .btn {
+  width: 100%;
+}
+
 .meta {
   font-size: 11px;
   color: var(--text-secondary);
@@ -623,6 +843,60 @@ body.dialog-page.platform-darwin {
 
 .toast.error {
   color: var(--danger);
+}
+
+.ctx-menu {
+  position: fixed;
+  z-index: 100;
+  min-width: 168px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ctx-menu.hidden {
+  display: none;
+}
+
+.ctx-item {
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.ctx-item:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.ctx-item:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.ctx-item.danger {
+  color: var(--danger);
+}
+
+.ctx-item.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+.ctx-sep {
+  height: 1px;
+  margin: 3px 6px;
+  background: var(--border);
 }
 
 @keyframes spin {

@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('cmdDeck', {
   pickFolder: () => ipcRenderer.invoke('dialog:pickFolder'),
   openEditor: (id) => ipcRenderer.invoke('ui:openEditor', id || null),
   openSettings: () => ipcRenderer.invoke('ui:openSettings'),
+  openLog: () => ipcRenderer.invoke('ui:openLog'),
+  showMacroMenu: (id) => ipcRenderer.invoke('ui:macroContextMenu', id),
   listShells: () => ipcRenderer.invoke('shells:list'),
   showItemInFolder: (filePath) => ipcRenderer.invoke('shell:showItem', filePath),
   onMacrosChanged: (cb) => {
@@ -31,5 +33,10 @@ contextBridge.exposeInMainWorld('cmdDeck', {
     const listener = (_e, payload) => cb(payload);
     ipcRenderer.on('macros:status', listener);
     return () => ipcRenderer.removeListener('macros:status', listener);
+  },
+  onToast: (cb) => {
+    const listener = (_e, payload) => cb(payload);
+    ipcRenderer.on('macros:toast', listener);
+    return () => ipcRenderer.removeListener('macros:toast', listener);
   }
 });

@@ -1,10 +1,6 @@
 (() => {
   const settingAot = document.getElementById('setting-aot');
   const settingMinimised = document.getElementById('setting-minimised');
-  const settingColumns = document.getElementById('setting-columns');
-  const settingColumnsOut = document.getElementById('setting-columns-out');
-  const settingRows = document.getElementById('setting-rows');
-  const settingRowsOut = document.getElementById('setting-rows-out');
   const settingOpacity = document.getElementById('setting-opacity');
   const settingOpacityOut = document.getElementById('setting-opacity-out');
   const settingsMeta = document.getElementById('settings-meta');
@@ -24,10 +20,6 @@
   function applySettings(settings) {
     settingAot.checked = !!settings.alwaysOnTop;
     settingMinimised.checked = !!settings.startMinimised;
-    settingColumns.value = String(settings.columns || 3);
-    settingColumnsOut.textContent = settingColumns.value;
-    settingRows.value = String(settings.rows || 3);
-    settingRowsOut.textContent = settingRows.value;
     settingOpacity.value = String(opacityToTransparencyPercent(settings.opacity));
     syncOpacityOutput();
   }
@@ -50,21 +42,13 @@
   settingMinimised.addEventListener('change', () => {
     window.cmdDeck.setSettings({ startMinimised: settingMinimised.checked });
   });
-  settingColumns.addEventListener('input', () => {
-    settingColumnsOut.textContent = settingColumns.value;
-  });
-  settingColumns.addEventListener('change', () => {
-    window.cmdDeck.setSettings({ columns: Number(settingColumns.value) });
-  });
-  settingRows.addEventListener('input', () => {
-    settingRowsOut.textContent = settingRows.value;
-  });
-  settingRows.addEventListener('change', () => {
-    window.cmdDeck.setSettings({ rows: Number(settingRows.value) });
-  });
   settingOpacity.addEventListener('input', () => {
     syncOpacityOutput();
     window.cmdDeck.setSettings({ opacity: transparencyPercentToOpacity(settingOpacity.value) });
+  });
+
+  document.getElementById('btn-open-log').addEventListener('click', () => {
+    window.cmdDeck.openLog();
   });
 
   document.addEventListener('keydown', (event) => {

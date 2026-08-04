@@ -8,6 +8,11 @@
   const fieldCwd = document.getElementById('field-cwd');
   const fieldTerminal = document.getElementById('field-terminal');
   const fieldShell = document.getElementById('field-shell');
+  const shellPicker = document.getElementById('shell-picker');
+  const shellPickerTrigger = document.getElementById('shell-picker-trigger');
+  const shellPickerMenu = document.getElementById('shell-picker-menu');
+  const shellPickerName = document.getElementById('shell-picker-name');
+  const shellPickerPath = document.getElementById('shell-picker-path');
   const shellHint = document.getElementById('shell-hint');
   const imagePreview = document.getElementById('image-preview');
   const btnDelete = document.getElementById('btn-delete');
@@ -32,30 +37,90 @@
     return map[value] || value || defaultShell;
   }
 
-  function populateShellOptions(selectedId) {
-    const options = shellOptions.length
-      ? shellOptions
-      : [{ id: defaultShell, name: defaultShell, detail: '' }];
-
-    fieldShell.innerHTML = '';
-    for (const shell of options) {
-      const opt = document.createElement('option');
-      opt.value = shell.id;
-      opt.textContent = shell.name;
-      opt.title = shell.detail || '';
-      fieldShell.appendChild(opt);
-    }
-
-    const wanted = migrateShellValue(selectedId);
-    fieldShell.value = options.some((s) => s.id === wanted) ? wanted : (options[0]?.id || defaultShell);
-    syncShellHint();
+  function shellPath(shell) {
+    return shell?.detail || shell?.executable || '';
   }
 
-  function syncShellHint() {
-    const selected = shellOptions.find((s) => s.id === fieldShell.value);
-    shellHint.textContent = selected?.detail
-      ? `Uses this shell’s PATH · ${selected.detail}`
-      : 'Uses this shell’s PATH and environment';
+  function getShellOptions() {
+    return shellOptions.length
+      ? shellOptions
+      : [{ id: defaultShell, name: defaultShell, detail: '' }];
+  }
+
+  function selectedShell() {
+    return getShellOptions().find((s) => s.id === fieldShell.value) || getShellOptions()[0] || null;
+  }
+
+  function syncShellTrigger() {
+    const shell = selectedShell();
+    shellPickerName.textContent = shell?.name || defaultShell;
+    const pathText = shellPath(shell);
+    shellPickerPath.textContent = pathText;
+    shellPickerPath.hidden = !pathText;
+    shellPickerTrigger.title = pathText || shell?.name || '';
+    shellHint.textContent = 'Uses this shell’s PATH and environment';
+  }
+
+  function setShellValue(id) {
+    const options = getShellOptions();
+    const wanted = migrateShellValue(id);
+    fieldShell.value = options.some((s) => s.id === wanted) ? wanted : (options[0]?.id || defaultShell);
+    syncShellTrigger();
+    for (const btn of shellPickerMenu.querySelectorAll('.shell-picker-option')) {
+      btn.classList.toggle('is-active', btn.dataset.id === fieldShell.value);
+    }
+  }
+
+  function closeShellPicker() {
+    shellPicker.classList.remove('is-open');
+    shellPickerMenu.classList.add('hidden');
+    shellPickerTrigger.setAttribute('aria-expanded', 'false');
+  }
+
+  function openShellPicker() {
+    shellPicker.classList.add('is-open');
+    shellPickerMenu.classList.remove('hidden');
+    shellPickerTrigger.setAttribute('aria-expanded', 'true');
+    const active = shellPickerMenu.querySelector('.shell-picker-option.is-active');
+    if (active) active.focus();
+  }
+
+  function populateShellOptions(selectedId) {
+    const options = getShellOptions();
+    shellPickerMenu.innerHTML = '';
+
+    for (const shell of options) {
+      const item = document.createElement('li');
+      item.setAttribute('role', 'presentation');
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'shell-picker-option';
+      btn.dataset.id = shell.id;
+      btn.setAttribute('role', 'option');
+      btn.title = shellPath(shell) || shell.name;
+
+      const name = document.createElement('span');
+      name.className = 'shell-picker-name';
+      name.textContent = shell.name;
+
+      const pathEl = document.createElement('span');
+      pathEl.className = 'shell-picker-path';
+      const pathText = shellPath(shell);
+      pathEl.textContent = pathText;
+      pathEl.hidden = !pathText;
+
+      btn.append(name, pathEl);
+      btn.addEventListener('click', () => {
+        setShellValue(shell.id);
+        closeShellPicker();
+      });
+
+      item.appendChild(btn);
+      shellPickerMenu.appendChild(item);
+    }
+
+    setShellValue(selectedId);
   }
 
   function showToast(message, isError = false) {
@@ -165,10 +230,25 @@
     if (folder) fieldCwd.value = folder;
   });
 
-  fieldShell.addEventListener('change', syncShellHint);
+  shellPickerTrigger.addEventListener('click', () => {
+    if (shellPicker.classList.contains('is-open')) closeShellPicker();
+    else openShellPicker();
+  });
+
+  document.addEventListener('mousedown', (event) => {
+    if (!shellPicker.contains(event.target)) closeShellPicker();
+  });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') closeWindow();
+    if (event.key === 'Escape') {
+      if (shellPicker.classList.contains('is-open')) {
+        event.preventDefault();
+        closeShellPicker();
+        shellPickerTrigger.focus();
+        return;
+      }
+      closeWindow();
+    }
   });
 
   init().catch((err) => {

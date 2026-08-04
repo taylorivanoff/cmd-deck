@@ -2,6 +2,9 @@
   const pad = document.getElementById('pad');
   const hint = document.getElementById('hint');
   const toast = document.getElementById('toast');
+  const ctxMenu = document.getElementById('ctx-menu');
+  const settingColumns = document.getElementById('setting-columns');
+  const settingRows = document.getElementById('setting-rows');
 
   let macros = [];
   let settings = { columns: 3, rows: 3, opacity: 0.94, alwaysOnTop: true, startMinimised: false };
@@ -38,12 +41,190 @@
     pad.style.setProperty('--rows', String(settings.rows || 3));
   }
 
+  function syncGridInputs() {
+    const cols = settings.columns || 3;
+    const rows = settings.rows || 3;
+    if (document.activeElement !== settingColumns) settingColumns.value = String(cols);
+    if (document.activeElement !== settingRows) settingRows.value = String(rows);
+
+    for (const stepper of document.querySelectorAll('.grid-stepper')) {
+      const key = stepper.dataset.key;
+      const min = Number(stepper.dataset.min);
+      const max = Number(stepper.dataset.max);
+      const value = key === 'columns' ? cols : rows;
+      const up = stepper.querySelector('.grid-arrow[data-dir="1"]');
+      const down = stepper.querySelector('.grid-arrow[data-dir="-1"]');
+      if (up) up.disabled = value >= max;
+      if (down) down.disabled = value <= min;
+    }
+  }
+
+  function clampInt(value, min, max, fallback) {
+    const n = Number.parseInt(String(value), 10);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.min(max, Math.max(min, n));
+  }
+
+  async function commitGridSetting(key, input, min, max) {
+    const next = clampInt(input.value, min, max, settings[key] || 3);
+    input.value = String(next);
+    if (settings[key] === next) {
+      syncGridInputs();
+      return;
+    }
+    settings = { ...settings, [key]: next };
+    syncGridInputs();
+    applyLayout();
+    await window.cmdDeck.setSettings({ [key]: next });
+  }
+
+  async function nudgeGridSetting(key, delta, min, max) {
+    const current = settings[key] || 3;
+    const next = Math.min(max, Math.max(min, current + delta));
+    if (next === current) return;
+    settings = { ...settings, [key]: next };
+    syncGridInputs();
+    applyLayout();
+    await window.cmdDeck.setSettings({ [key]: next });
+  }
+
+  function bindEditableStepper(input, key) {
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        const stepper = input.closest('.grid-stepper');
+        const min = Number(stepper.dataset.min);
+        const max = Number(stepper.dataset.max);
+        nudgeGridSetting(key, event.key === 'ArrowUp' ? 1 : -1, min, max);
+        return;
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        input.blur();
+      }
+    });
+    input.addEventListener('change', () => {
+      const stepper = input.closest('.grid-stepper');
+      commitGridSetting(key, input, Number(stepper.dataset.min), Number(stepper.dataset.max));
+    });
+    input.addEventListener('blur', () => {
+      const stepper = input.closest('.grid-stepper');
+      commitGridSetting(key, input, Number(stepper.dataset.min), Number(stepper.dataset.max));
+    });
+  }
+
   function openEditor(macro = null) {
     window.cmdDeck.openEditor(macro?.id || null);
   }
 
   function openSettings() {
     window.cmdDeck.openSettings();
+  }
+
+  function hideContextMenu() {
+    ctxMenu.classList.add('hidden');
+    ctxMenu.innerHTML = '';
+  }
+
+  function addCtxItem(label, { danger = false, disabled = false, onClick } = {}) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = danger ? 'ctx-item danger' : 'ctx-item';
+    btn.setAttribute('role', 'menuitem');
+    btn.textContent = label;
+    btn.disabled = !!disabled;
+    btn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      hideContextMenu();
+      if (typeof onClick === 'function') await onClick();
+    });
+    ctxMenu.appendChild(btn);
+  }
+
+  function addCtxSep() {
+    const sep = document.createElement('div');
+    sep.className = 'ctx-sep';
+    sep.setAttribute('role', 'separator');
+    ctxMenu.appendChild(sep);
+  }
+
+  function showContextMenu(event, macro) {
+    event.preventDefault();
+    event.stopPropagation();
+    hideContextMenu();
+
+    const index = macros.findIndex((m) => m.id === macro.id);
+    const isRunning = running.has(macro.id);
+
+    addCtxItem(isRunning ? 'Stop' : 'Run', {
+      onClick: async () => {
+        if (isRunning) {
+          await window.cmdDeck.stopMacro(macro.id);
+          return;
+        }
+        const result = await window.cmdDeck.runMacro(macro.id);
+        if (!result?.ok) showToast(result?.error || 'Failed to run', true);
+      }
+    });
+    addCtxSep();
+    addCtxItem('Edit', { onClick: () => openEditor(macro) });
+    addCtxItem('Duplicate', {
+      onClick: async () => {
+        const name = (macro.name || '').trim();
+        await window.cmdDeck.addMacro({
+          command: macro.command,
+          name: name ? `${name} copy` : '',
+          imagePath: macro.imagePath || null,
+          cwd: macro.cwd || null,
+          showTerminal: !!macro.showTerminal,
+          shell: macro.shell || macro.terminalApp || null
+        });
+      }
+    });
+    addCtxItem('Move Left', {
+      disabled: index <= 0,
+      onClick: async () => {
+        if (index <= 0) return;
+        const ids = macros.map((m) => m.id);
+        const [item] = ids.splice(index, 1);
+        ids.splice(index - 1, 0, item);
+        await window.cmdDeck.reorderMacros(ids);
+      }
+    });
+    addCtxItem('Move Right', {
+      disabled: index < 0 || index >= macros.length - 1,
+      onClick: async () => {
+        if (index < 0 || index >= macros.length - 1) return;
+        const ids = macros.map((m) => m.id);
+        const [item] = ids.splice(index, 1);
+        ids.splice(index + 1, 0, item);
+        await window.cmdDeck.reorderMacros(ids);
+      }
+    });
+    addCtxSep();
+    addCtxItem('Delete', {
+      danger: true,
+      onClick: async () => {
+        const ok = confirm('Delete this macro?');
+        if (!ok) return;
+        await window.cmdDeck.deleteMacro(macro.id);
+      }
+    });
+
+    ctxMenu.classList.remove('hidden');
+
+    const edge = 8;
+    const { innerWidth, innerHeight } = window;
+    const rect = ctxMenu.getBoundingClientRect();
+    let left = event.clientX;
+    let top = event.clientY;
+    if (left + rect.width > innerWidth - edge) left = innerWidth - rect.width - edge;
+    if (top + rect.height > innerHeight - edge) top = innerHeight - rect.height - edge;
+    if (left < edge) left = edge;
+    if (top < edge) top = edge;
+    ctxMenu.style.left = `${left}px`;
+    ctxMenu.style.top = `${top}px`;
   }
 
   function render() {
@@ -92,16 +273,24 @@
 
       btn.addEventListener('click', async () => {
         if (running.has(macro.id)) {
+          running.delete(macro.id);
+          render();
           await window.cmdDeck.stopMacro(macro.id);
           return;
         }
+        // Optimistic: show running state immediately while main warms/spawns.
+        running.add(macro.id);
+        render();
         const result = await window.cmdDeck.runMacro(macro.id);
-        if (!result?.ok) showToast(result?.error || 'Failed to run', true);
+        if (!result?.ok) {
+          running.delete(macro.id);
+          render();
+          showToast(result?.error || 'Failed to run', true);
+        }
       });
 
       btn.addEventListener('contextmenu', (event) => {
-        event.preventDefault();
-        openEditor(macro);
+        showContextMenu(event, macro);
       });
 
       pad.appendChild(btn);
@@ -145,6 +334,7 @@
     document.body.classList.add(`platform-${state.platform || 'win32'}`);
     if (state.dark) document.body.classList.add('dark');
 
+    syncGridInputs();
     render();
 
     window.cmdDeck.onMacrosChanged((next) => {
@@ -154,6 +344,7 @@
 
     window.cmdDeck.onSettingsChanged((next) => {
       settings = next || settings;
+      syncGridInputs();
       render();
     });
 
@@ -164,6 +355,7 @@
         render();
         return;
       }
+      // Always clear spinner for finished/failed/stopped — including missing commands.
       running.delete(payload.id);
       if (payload.status === 'success') {
         flashStatus(payload.id, 'success');
@@ -174,13 +366,45 @@
         render();
       }
     });
+
+    window.cmdDeck.onToast((payload) => {
+      if (!payload?.message) return;
+      showToast(payload.message, !!payload.error);
+    });
   }
 
   document.getElementById('btn-add').addEventListener('click', () => openEditor());
   document.getElementById('btn-settings').addEventListener('click', openSettings);
+
+  document.addEventListener('mousedown', (event) => {
+    if (!ctxMenu.classList.contains('hidden') && !ctxMenu.contains(event.target)) {
+      hideContextMenu();
+    }
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') hideContextMenu();
+  });
+  window.addEventListener('blur', hideContextMenu);
+  window.addEventListener('resize', hideContextMenu);
+
+  bindEditableStepper(settingColumns, 'columns');
+  bindEditableStepper(settingRows, 'rows');
+
+  document.querySelectorAll('.grid-stepper').forEach((stepper) => {
+    stepper.querySelectorAll('.grid-arrow').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = stepper.dataset.key;
+        const min = Number(stepper.dataset.min);
+        const max = Number(stepper.dataset.max);
+        const dir = Number(btn.dataset.dir) || 0;
+        nudgeGridSetting(key, dir, min, max);
+      });
+    });
+  });
 
   init().catch((err) => {
     console.error(err);
     showToast('Failed to load CmdDeck', true);
   });
 })();
+

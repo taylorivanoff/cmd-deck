@@ -86,8 +86,8 @@ function clamp(value, min, max, fallback) {
 
 function getSettings() {
   return {
-    columns: clamp(store.get('columns', 3), 2, 8, 3),
-    rows: clamp(store.get('rows', 3), 1, 8, 3),
+    columns: clamp(store.get('columns', 3), 2, 32, 3),
+    rows: clamp(store.get('rows', 3), 1, 32, 3),
     opacity: store.get('opacity', 0.94),
     alwaysOnTop: store.get('alwaysOnTop', true),
     startMinimised: store.get('startMinimised', false)
@@ -95,8 +95,8 @@ function getSettings() {
 }
 
 function setSettings(partial) {
-  if (partial.columns !== undefined) store.set('columns', clamp(partial.columns, 2, 8, 3));
-  if (partial.rows !== undefined) store.set('rows', clamp(partial.rows, 1, 8, 3));
+  if (partial.columns !== undefined) store.set('columns', clamp(partial.columns, 2, 32, 3));
+  if (partial.rows !== undefined) store.set('rows', clamp(partial.rows, 1, 32, 3));
   if (partial.opacity !== undefined) store.set('opacity', clamp(partial.opacity, 0.35, 1, 0.94));
   if (partial.alwaysOnTop !== undefined) store.set('alwaysOnTop', !!partial.alwaysOnTop);
   if (partial.startMinimised !== undefined) store.set('startMinimised', !!partial.startMinimised);

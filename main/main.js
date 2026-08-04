@@ -1,6 +1,7 @@
 const {
   app,
   BrowserWindow,
+  Menu,
   ipcMain,
   dialog,
   screen,
@@ -24,13 +25,22 @@ const {
   openEditorWindow,
   openSettingsWindow,
   getSettingsWindow,
+  setDialogWindowsAlwaysOnTop,
   closeDialogWindows
 } = require('./dialog-windows');
+const {
+  openLogWindow,
+  sendToLogWindow,
+  setLogWindowAlwaysOnTop,
+  closeLogWindow
+} = require('./log-window');
+const logger = require('./logger');
 const shells = require('./shells');
 const { createTray, updateTrayMenu, destroyTray, getIconPath } = require('./tray');
 
 const APP_NAME = 'CmdDeck';
 const START_MINIMIZED_ARG = '--start-minimised';
+const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 let mainWindow = null;
 let splashWindow = null;
@@ -43,6 +53,18 @@ if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', () => showWindow());
+
+  // Dev-only: reload BrowserWindows on renderer changes; hard-restart on main/preload changes.
+  if (!app.isPackaged) {
+    try {
+      require('electron-reloader')(module, {
+        watchRenderer: true,
+        ignore: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/bun.lock', '**/package-lock.json']
+      });
+    } catch (_) {
+      // electron-reloader is a devDependency; ignore if missing.
+    }
+  }
 }
 
 function ensureDir(dirPath) {
@@ -137,18 +159,26 @@ function saveWindowBounds(immediate = false) {
 
 function createSplash() {
   const splashPath = path.join(app.getAppPath(), 'resources', 'splash.html');
+  // Opaque window (not transparent): on Windows, mainWindow.setOpacity can
+  // bleed into other transparent BrowserWindows in the same process.
   splashWindow = new BrowserWindow({
     width: 280,
     height: 320,
     frame: false,
-    transparent: true,
+    transparent: false,
+    backgroundColor: '#1c1c1e',
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
+    maximizable: false,
+    fullscreenable: false,
     webPreferences: { nodeIntegration: false }
   });
+  splashWindow.setOpacity(1);
+  splashWindow.setMenu(null);
   splashWindow.loadFile(splashPath);
   splashWindow.center();
+  splashWindow.show();
 }
 
 function closeSplash() {
@@ -178,6 +208,9 @@ function platformWindowOptions() {
 
 function applyWindowOpacity(value) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
+  // Never apply pad transparency while the splash is up — Windows can
+  // composite that opacity onto sibling windows.
+  if (splashWindow && !splashWindow.isDestroyed()) return;
   const opacity = Math.min(1, Math.max(0.35, Number(value) || 0.94));
   mainWindow.setOpacity(opacity);
 }
@@ -210,7 +243,7 @@ function createWindow() {
     }
   });
 
-  // Electron can drop x/y when constructing with show:false — re-apply explicitly.
+  // Electron can drop x/y when constructing with show:false - re-apply explicitly.
   if (Number.isFinite(bounds.x) && Number.isFinite(bounds.y)) {
     mainWindow.setBounds({
       x: bounds.x,
@@ -223,7 +256,8 @@ function createWindow() {
   }
 
   mainWindow.setMenu(null);
-  applyWindowOpacity(settings.opacity);
+  // Keep main at full opacity until splash closes (see applyWindowOpacity).
+  mainWindow.setOpacity(1);
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 
   mainWindow.webContents.on('did-finish-load', () => {
@@ -275,8 +309,48 @@ function toggleWindow() {
 function applyAlwaysOnTop(value) {
   store.setSettings({ alwaysOnTop: value });
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setAlwaysOnTop(value);
+  setDialogWindowsAlwaysOnTop(value);
+  setLogWindowAlwaysOnTop(value);
   if (trayHandlers) updateTrayMenu(trayHandlers);
   sendToRenderer('settings:changed', store.getSettings());
+}
+
+function macroLabel(macro) {
+  if (!macro) return 'Macro';
+  const name = (macro.name || '').trim();
+  if (name) return name;
+  const cmd = (macro.command || '').trim().split(/\r?\n/).find((line) => line.trim()) || 'Command';
+  return cmd.length > 60 ? `${cmd.slice(0, 57)}…` : cmd;
+}
+
+function logMacroStatus(payload) {
+  if (!payload?.id) return;
+  const macro = store.getMacros().find((m) => m.id === payload.id);
+  const label = payload.name || macroLabel(macro);
+  const shell = payload.shell ? ` [${payload.shell}]` : '';
+
+  if (payload.status === 'running') {
+    if (payload.pending) {
+      logger.addLog('info', `Queued “${label}”${shell}`, { macroId: payload.id });
+    } else {
+      const pid = payload.pid ? ` pid=${payload.pid}` : '';
+      logger.addLog('info', `Started “${label}”${shell}${pid}`, { macroId: payload.id });
+    }
+    return;
+  }
+  if (payload.status === 'success') {
+    logger.addLog('info', `Finished “${label}”${shell}`, { macroId: payload.id });
+    return;
+  }
+  if (payload.status === 'error') {
+    logger.addLog('error', `Failed “${label}”${shell}: ${payload.error || 'Command failed'}`, {
+      macroId: payload.id
+    });
+    return;
+  }
+  if (payload.status === 'stopped') {
+    logger.addLog('warn', `Stopped “${label}”${shell}`, { macroId: payload.id });
+  }
 }
 
 function setStartMinimised(value) {
@@ -367,7 +441,7 @@ function setupAutoUpdater() {
     }).then(({ response }) => {
       if (response === 0) {
         isQuitting = true;
-        autoUpdater.quitAndInstall(false, true);
+        autoUpdater.quitAndInstall(true, true);
       }
     });
   });
@@ -385,6 +459,7 @@ function setupAutoUpdater() {
   });
 
   checkForUpdates(false);
+  setInterval(() => checkForUpdates(false), UPDATE_CHECK_INTERVAL_MS);
 }
 
 function copyImageToStore(sourcePath) {
@@ -419,6 +494,199 @@ function broadcastMacros() {
   const macros = decorateMacros(store.getMacros());
   sendToRenderer('macros:changed', macros);
   return macros;
+}
+
+/** @type {Set<string>} */
+const pendingStarts = new Set();
+
+function runMacroById(id) {
+  const macro = store.getMacros().find((m) => m.id === id);
+  if (!macro) return { ok: false, error: 'Macro not found.' };
+
+  // Spawn first — creating the terminal BrowserWindow is comparatively slow.
+  const result = runner.runMacro(macro);
+  if (!result.ok) return result;
+
+  if (macro.showTerminal) {
+    createTerminalWindow(macro, getIconPath(), {
+      onUserClose: (macroId) => {
+        if (runner.getRunning(macroId)) runner.stopMacro(macroId);
+      }
+    });
+    const running = runner.getRunning(id);
+    sendToTerminal(id, 'terminal:init', {
+      id,
+      name: macro.name,
+      command: macro.command,
+      pid: running?.pid,
+      stdout: running?.stdout || '',
+      stderr: running?.stderr || ''
+    });
+  }
+  return result;
+}
+
+function queueMacroRun(id) {
+  const macro = store.getMacros().find((m) => m.id === id);
+  if (!macro) return { ok: false, error: 'Macro not found.' };
+  if (runner.getRunning(id) || pendingStarts.has(id)) {
+    return { ok: false, error: 'Already running.' };
+  }
+
+  pendingStarts.add(id);
+  // Optimistic UI feedback before PATH/shell work finishes.
+  const pendingStatus = {
+    id,
+    status: 'running',
+    name: macro.name || '',
+    command: macro.command || '',
+    showTerminal: !!macro.showTerminal,
+    pending: true
+  };
+  logMacroStatus(pendingStatus);
+  sendToRenderer('macros:status', pendingStatus);
+
+  setImmediate(() => {
+    if (!pendingStarts.has(id)) return;
+    pendingStarts.delete(id);
+    try {
+      const result = runMacroById(id);
+      if (!result?.ok) {
+        const failStatus = {
+          id,
+          status: 'error',
+          error: result?.error || 'Failed to run',
+          showTerminal: !!macro.showTerminal
+        };
+        logMacroStatus(failStatus);
+        sendToRenderer('macros:status', failStatus);
+        sendToRenderer('macros:toast', {
+          message: result?.error || 'Failed to run',
+          error: true
+        });
+        return;
+      }
+    } catch (err) {
+      const failStatus = {
+        id,
+        status: 'error',
+        error: err?.message || String(err),
+        showTerminal: !!macro.showTerminal
+      };
+      logMacroStatus(failStatus);
+      sendToRenderer('macros:status', failStatus);
+      sendToRenderer('macros:toast', {
+        message: err?.message || String(err),
+        error: true
+      });
+    }
+  });
+
+  return { ok: true, queued: true };
+}
+
+function duplicateMacro(id) {
+  const existing = store.getMacros().find((m) => m.id === id);
+  if (!existing) return null;
+  const name = (existing.name || '').trim();
+  store.addMacro({
+    command: existing.command,
+    name: name ? `${name} copy` : '',
+    imagePath: existing.imagePath || null,
+    cwd: existing.cwd || null,
+    showTerminal: !!existing.showTerminal,
+    shell: existing.shell || existing.terminalApp || null
+  });
+  return broadcastMacros();
+}
+
+function moveMacro(id, direction) {
+  const macros = store.getMacros();
+  const index = macros.findIndex((m) => m.id === id);
+  if (index < 0) return null;
+  const target = index + direction;
+  if (target < 0 || target >= macros.length) return broadcastMacros();
+  const next = macros.slice();
+  const [item] = next.splice(index, 1);
+  next.splice(target, 0, item);
+  store.setMacros(next);
+  return broadcastMacros();
+}
+
+function popupMacroContextMenu(event, id) {
+  const macro = store.getMacros().find((m) => m.id === id);
+  if (!macro) return { ok: false };
+
+  const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+  const isRunning = !!runner.getRunning(id);
+  const macros = store.getMacros();
+  const index = macros.findIndex((m) => m.id === id);
+  const alwaysOnTop = !!store.getSettings().alwaysOnTop;
+
+  const menu = Menu.buildFromTemplate([
+    {
+      label: isRunning ? 'Stop' : 'Run',
+      click: () => {
+        if (isRunning) runner.stopMacro(id);
+        else {
+          const result = runMacroById(id);
+          if (!result?.ok && win && !win.isDestroyed()) {
+            win.webContents.send('macros:toast', { message: result?.error || 'Failed to run', error: true });
+          }
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Edit',
+      click: () => {
+        openEditorWindow({
+          macroId: id,
+          iconPath: getIconPath(),
+          parent: mainWindow,
+          alwaysOnTop
+        });
+      }
+    },
+    {
+      label: 'Duplicate',
+      click: () => duplicateMacro(id)
+    },
+    {
+      label: 'Move Left',
+      enabled: index > 0,
+      click: () => moveMacro(id, -1)
+    },
+    {
+      label: 'Move Right',
+      enabled: index >= 0 && index < macros.length - 1,
+      click: () => moveMacro(id, 1)
+    },
+    { type: 'separator' },
+    {
+      label: 'Delete',
+      click: async () => {
+        const result = await dialog.showMessageBox(win, {
+          type: 'warning',
+          buttons: ['Delete', 'Cancel'],
+          defaultId: 1,
+          cancelId: 1,
+          noLink: true,
+          title: APP_NAME,
+          message: 'Delete this macro?',
+          detail: (macro.name || macro.command || '').trim() || undefined
+        });
+        if (result.response !== 0) return;
+        if (macro.imagePath) removeImageIfOwned(macro.imagePath);
+        if (runner.getRunning(id)) runner.stopMacro(id);
+        store.deleteMacro(id);
+        broadcastMacros();
+      }
+    }
+  ]);
+
+  menu.popup({ window: win || undefined });
+  return { ok: true };
 }
 
 function registerIpc() {
@@ -469,36 +737,21 @@ function registerIpc() {
     return broadcastMacros();
   });
 
-  ipcMain.handle('macros:run', (_e, id) => {
-    const macro = store.getMacros().find((m) => m.id === id);
-    if (!macro) return { ok: false, error: 'Macro not found.' };
+  ipcMain.handle('macros:run', (_e, id) => queueMacroRun(id));
 
-    if (macro.showTerminal) {
-      createTerminalWindow(macro, getIconPath(), {
-        onUserClose: (macroId) => {
-          if (runner.getRunning(macroId)) runner.stopMacro(macroId);
-        }
-      });
-    }
-
-    // Always execute through the selected shell so PATH/env match that shell
-    // (e.g. php available in PowerShell but not cmd).
-    const result = runner.runMacro(macro);
-    if (result.ok && macro.showTerminal) {
-      const running = runner.getRunning(id);
-      sendToTerminal(id, 'terminal:init', {
-        id,
-        name: macro.name,
-        command: macro.command,
-        pid: running?.pid,
-        stdout: running?.stdout || '',
-        stderr: running?.stderr || ''
-      });
+  ipcMain.handle('macros:stop', (_e, id) => {
+    const wasPending = pendingStarts.delete(id);
+    const result = runner.stopMacro(id);
+    if (wasPending && !runner.getRunning(id)) {
+      const stopped = { id, status: 'stopped' };
+      logMacroStatus(stopped);
+      sendToRenderer('macros:status', stopped);
+      return { ok: true };
     }
     return result;
   });
 
-  ipcMain.handle('macros:stop', (_e, id) => runner.stopMacro(id));
+  ipcMain.handle('ui:macroContextMenu', (event, id) => popupMacroContextMenu(event, id));
 
   ipcMain.handle('terminal:bootstrap', (_e, id) => {
     const running = runner.getRunning(id);
@@ -537,6 +790,8 @@ function registerIpc() {
     const settings = store.setSettings(partial || {});
     if (partial?.alwaysOnTop !== undefined && partial.alwaysOnTop !== prev.alwaysOnTop) {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setAlwaysOnTop(settings.alwaysOnTop);
+      setDialogWindowsAlwaysOnTop(settings.alwaysOnTop);
+      setLogWindowAlwaysOnTop(settings.alwaysOnTop);
     }
     if (partial?.opacity !== undefined) applyWindowOpacity(settings.opacity);
     if (partial?.startMinimised !== undefined) syncLoginItemArgs();
@@ -546,19 +801,39 @@ function registerIpc() {
   });
 
   ipcMain.handle('ui:openEditor', (_e, id) => {
+    const alwaysOnTop = !!store.getSettings().alwaysOnTop;
     openEditorWindow({
       macroId: id || null,
       iconPath: getIconPath(),
-      parent: mainWindow
+      parent: mainWindow,
+      alwaysOnTop
     });
     return { ok: true };
   });
 
   ipcMain.handle('ui:openSettings', () => {
+    const alwaysOnTop = !!store.getSettings().alwaysOnTop;
     openSettingsWindow({
       iconPath: getIconPath(),
-      parent: mainWindow
+      parent: mainWindow,
+      alwaysOnTop
     });
+    return { ok: true };
+  });
+
+  ipcMain.handle('ui:openLog', () => {
+    const alwaysOnTop = !!store.getSettings().alwaysOnTop;
+    openLogWindow({
+      iconPath: getIconPath(),
+      parent: mainWindow,
+      alwaysOnTop
+    });
+    return { ok: true };
+  });
+
+  ipcMain.handle('log:get', () => logger.getLogs());
+  ipcMain.handle('log:clear', () => {
+    logger.clearLogs();
     return { ok: true };
   });
 
@@ -600,6 +875,15 @@ app.whenReady().then(() => {
   registerIpc();
   createWindow();
 
+  // Warm PATH/shell detection off the click path.
+  setImmediate(() => {
+    try {
+      shells.warmRuntime();
+    } catch (err) {
+      console.warn('CmdDeck runtime warm-up failed:', err?.message || err);
+    }
+  });
+
   trayHandlers = {
     showWindow,
     hideWindow,
@@ -616,7 +900,13 @@ app.whenReady().then(() => {
   createTray(getIconPath(), trayHandlers);
   setupAutoUpdater();
 
+  logger.onLog((entry) => {
+    sendToLogWindow('log:entry', entry);
+  });
+  logger.addLog('info', `${APP_NAME} ready`);
+
   runner.onStatus((payload) => {
+    logMacroStatus(payload);
     sendToRenderer('macros:status', payload);
     if (payload?.id) sendToTerminal(payload.id, 'terminal:status', payload);
   });
@@ -639,6 +929,7 @@ app.on('before-quit', () => {
   isQuitting = true;
   saveWindowBounds(true);
   closeDialogWindows();
+  closeLogWindow();
   closeAllTerminalWindows();
   closeSplash();
   destroyTray();

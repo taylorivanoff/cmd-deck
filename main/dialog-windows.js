@@ -22,7 +22,17 @@ function centerOnParent(win, parent) {
   );
 }
 
-function createAuxWindow({ width, height, minWidth, minHeight, title, html, query, iconPath, parent }) {
+function bringToFront(win, alwaysOnTop) {
+  if (!win || win.isDestroyed()) return;
+  win.setAlwaysOnTop(!!alwaysOnTop);
+  win.setOpacity(1);
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+  win.moveTop();
+}
+
+function createAuxWindow({ width, height, minWidth, minHeight, title, html, query, iconPath, parent, alwaysOnTop, resizable = true }) {
   const win = new BrowserWindow({
     width,
     height,
@@ -31,12 +41,12 @@ function createAuxWindow({ width, height, minWidth, minHeight, title, html, quer
     title,
     icon: iconPath,
     show: false,
+    alwaysOnTop: !!alwaysOnTop,
     autoHideMenuBar: true,
-    resizable: true,
+    resizable: !!resizable,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
-    parent: parent && !parent.isDestroyed() ? parent : undefined,
     backgroundColor: '#1c1c1e',
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'preload.js'),
@@ -47,27 +57,25 @@ function createAuxWindow({ width, height, minWidth, minHeight, title, html, quer
   });
 
   win.setMenu(null);
+  win.setOpacity(1);
   win.loadFile(path.join(__dirname, '..', 'renderer', html), { query: query || {} });
 
   win.once('ready-to-show', () => {
     centerOnParent(win, parent);
-    win.show();
-    win.focus();
+    bringToFront(win, alwaysOnTop);
   });
 
   return win;
 }
 
-function openEditorWindow({ macroId = null, iconPath, parent } = {}) {
+function openEditorWindow({ macroId = null, iconPath, parent, alwaysOnTop = false } = {}) {
   const query = macroId ? { id: String(macroId) } : {};
   const title = macroId ? 'Edit Macro' : 'Add Macro';
 
   if (editorWindow && !editorWindow.isDestroyed()) {
     editorWindow.setTitle(title);
     editorWindow.loadFile(path.join(__dirname, '..', 'renderer', 'editor.html'), { query });
-    if (editorWindow.isMinimized()) editorWindow.restore();
-    editorWindow.show();
-    editorWindow.focus();
+    bringToFront(editorWindow, alwaysOnTop);
     return editorWindow;
   }
 
@@ -75,12 +83,13 @@ function openEditorWindow({ macroId = null, iconPath, parent } = {}) {
     width: 440,
     height: 620,
     minWidth: 360,
-    minHeight: 480,
+    minHeight: 600,
     title,
     html: 'editor.html',
     query,
     iconPath,
-    parent
+    parent,
+    alwaysOnTop
   });
 
   editorWindow.on('closed', () => {
@@ -90,23 +99,23 @@ function openEditorWindow({ macroId = null, iconPath, parent } = {}) {
   return editorWindow;
 }
 
-function openSettingsWindow({ iconPath, parent } = {}) {
+function openSettingsWindow({ iconPath, parent, alwaysOnTop = false } = {}) {
   if (settingsWindow && !settingsWindow.isDestroyed()) {
-    if (settingsWindow.isMinimized()) settingsWindow.restore();
-    settingsWindow.show();
-    settingsWindow.focus();
+    bringToFront(settingsWindow, alwaysOnTop);
     return settingsWindow;
   }
 
   settingsWindow = createAuxWindow({
-    width: 380,
-    height: 420,
-    minWidth: 320,
-    minHeight: 340,
+    width: 360,
+    height: 320,
+    minWidth: 300,
+    minHeight: 280,
     title: 'Settings',
     html: 'settings.html',
     iconPath,
-    parent
+    parent,
+    alwaysOnTop,
+    resizable: false
   });
 
   settingsWindow.on('closed', () => {
@@ -132,6 +141,12 @@ function getSettingsWindow() {
   return settingsWindow;
 }
 
+function setDialogWindowsAlwaysOnTop(value) {
+  const onTop = !!value;
+  if (editorWindow && !editorWindow.isDestroyed()) editorWindow.setAlwaysOnTop(onTop);
+  if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.setAlwaysOnTop(onTop);
+}
+
 function closeDialogWindows() {
   if (editorWindow && !editorWindow.isDestroyed()) editorWindow.destroy();
   if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.destroy();
@@ -144,5 +159,6 @@ module.exports = {
   openSettingsWindow,
   getEditorWindow,
   getSettingsWindow,
+  setDialogWindowsAlwaysOnTop,
   closeDialogWindows
 };

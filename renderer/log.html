@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CmdDeck Activity Log</title>
+  <link rel="stylesheet" href="log.css" />
+</head>
+<body>
+  <header class="bar">
+    <div class="title">Activity log</div>
+    <div class="actions">
+      <button type="button" class="btn ghost" id="btn-clear">Clear</button>
+      <button type="button" class="btn ghost" id="btn-close">Close</button>
+    </div>
+  </header>
+  <div class="list" id="list" aria-live="polite"></div>
+  <script src="log.js"></script>
+</body>
+</html>

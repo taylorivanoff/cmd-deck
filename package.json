@@ -9,6 +9,7 @@
   "main": "main/main.js",
   "scripts": {
     "start": "electron .",
+    "dev": "electron .",
     "bump": "node scripts/bump-version.js",
     "release": "electron-builder --publish=never"
   },
@@ -58,6 +59,7 @@
   },
   "devDependencies": {
     "electron": "^43.2.0",
-    "electron-builder": "^26.15.3"
+    "electron-builder": "^26.15.3",
+    "electron-reloader": "^1.2.3"
   }
 }

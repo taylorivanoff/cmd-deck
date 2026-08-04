@@ -9,9 +9,10 @@ const {
   exists
 } = require('./env');
 
-const SHELL_CACHE_TTL_MS = 30_000;
+const SHELL_CACHE_TTL_MS = 5 * 60_000;
 let cachedShells = null;
 let cachedShellsAt = 0;
+let cachedDefaultShellId = null;
 
 /** @typedef {'powershell' | 'cmd' | 'posix' | 'fish' | 'nu' | 'wsl'} ShellKind */
 
@@ -316,18 +317,24 @@ function listShells() {
 }
 
 function defaultShellId() {
+  if (cachedDefaultShellId) return cachedDefaultShellId;
+
+  let id = 'sh';
   if (process.platform === 'win32') {
-    if (whichExecutable('pwsh.exe') || whichExecutable('pwsh')) return 'pwsh';
-    return 'powershell';
+    id = (whichExecutable('pwsh.exe') || whichExecutable('pwsh')) ? 'pwsh' : 'powershell';
+  } else {
+    const shellEnv = process.env.SHELL;
+    if (shellEnv && exists(shellEnv)) {
+      id = idFromExecutable(shellEnv);
+    } else if (exists('/bin/zsh') || whichExecutable('zsh')) {
+      id = 'zsh';
+    } else if (exists('/bin/bash') || whichExecutable('bash')) {
+      id = 'bash';
+    }
   }
 
-  const shellEnv = process.env.SHELL;
-  if (shellEnv && exists(shellEnv)) {
-    return idFromExecutable(shellEnv);
-  }
-  if (exists('/bin/zsh') || whichExecutable('zsh')) return 'zsh';
-  if (exists('/bin/bash') || whichExecutable('bash')) return 'bash';
-  return 'sh';
+  cachedDefaultShellId = id;
+  return id;
 }
 
 function migrateShellId(value) {
@@ -503,6 +510,14 @@ end tell`;
 function clearShellCache() {
   cachedShells = null;
   cachedShellsAt = 0;
+  cachedDefaultShellId = null;
+}
+
+/** Pre-build PATH/shell caches so the first button click isn't blocked on probes. */
+function warmRuntime() {
+  buildProcessEnv();
+  listShells();
+  defaultShellId();
 }
 
 module.exports = {
@@ -512,5 +527,6 @@ module.exports = {
   defaultShellId,
   spawnWithShell,
   launchVisibleShell,
-  clearShellCache
+  clearShellCache,
+  warmRuntime
 };

@@ -18,11 +18,23 @@
         <textarea id="field-command" rows="3" placeholder="php -v&#10;npm start" required></textarea>
       </label>
 
-      <label class="field" id="shell-field">
+      <div class="field" id="shell-field">
         <span>Run with</span>
-        <select id="field-shell"></select>
+        <div class="shell-picker" id="shell-picker">
+          <input type="hidden" id="field-shell" value="" />
+          <button type="button" class="shell-picker-trigger" id="shell-picker-trigger" aria-haspopup="listbox" aria-expanded="false">
+            <span class="shell-picker-text">
+              <span class="shell-picker-name" id="shell-picker-name"></span>
+              <span class="shell-picker-path" id="shell-picker-path"></span>
+            </span>
+            <svg class="shell-picker-caret" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true">
+              <path fill="currentColor" d="M6 6.8 1.2 2h9.6z" />
+            </svg>
+          </button>
+          <ul class="shell-picker-menu hidden" id="shell-picker-menu" role="listbox"></ul>
+        </div>
         <small class="field-hint" id="shell-hint">Uses this shell’s PATH and environment</small>
-      </label>
+      </div>
 
       <label class="option-card" for="field-terminal">
         <input type="checkbox" id="field-terminal" />

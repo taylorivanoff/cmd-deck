@@ -17,6 +17,33 @@
         <h1 class="app-title">CmdDeck</h1>
       </div>
       <div class="titlebar-actions">
+        <div class="titlebar-grid" title="Grid size">
+          <div class="grid-stepper" data-key="columns" data-min="2" data-max="32">
+            <span class="grid-label">Cols</span>
+            <input type="text" class="grid-value" id="setting-columns" inputmode="numeric" maxlength="2" aria-label="Columns" value="3" />
+            <div class="grid-arrows">
+              <button type="button" class="grid-arrow" data-dir="1" aria-label="Increase columns" title="Increase">
+                <svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path fill="currentColor" d="M6 1.2 10.8 6H1.2z"/></svg>
+              </button>
+              <button type="button" class="grid-arrow" data-dir="-1" aria-label="Decrease columns" title="Decrease">
+                <svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path fill="currentColor" d="M6 6.8 1.2 2h9.6z"/></svg>
+              </button>
+            </div>
+          </div>
+          <span class="grid-sep" aria-hidden="true">×</span>
+          <div class="grid-stepper" data-key="rows" data-min="1" data-max="32">
+            <span class="grid-label">Rows</span>
+            <input type="text" class="grid-value" id="setting-rows" inputmode="numeric" maxlength="2" aria-label="Rows" value="3" />
+            <div class="grid-arrows">
+              <button type="button" class="grid-arrow" data-dir="1" aria-label="Increase rows" title="Increase">
+                <svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path fill="currentColor" d="M6 1.2 10.8 6H1.2z"/></svg>
+              </button>
+              <button type="button" class="grid-arrow" data-dir="-1" aria-label="Decrease rows" title="Decrease">
+                <svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path fill="currentColor" d="M6 6.8 1.2 2h9.6z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
         <button type="button" class="icon-btn" id="btn-settings" title="Settings" aria-label="Settings">
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
             <path fill="currentColor"
@@ -33,10 +60,12 @@
 
     <main class="pad" id="pad" aria-label="Macro buttons"></main>
 
-    <p class="hint" id="hint">Click a button to run. Right-click to edit.</p>
+    <p class="hint" id="hint">Click a button to run. Right-click for more.</p>
   </div>
 
   <div class="toast hidden" id="toast" role="status"></div>
+
+  <div class="ctx-menu hidden" id="ctx-menu" role="menu"></div>
 
   <script src="app.js"></script>
 </body>
