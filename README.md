@@ -1,4 +1,4 @@
-# CmdDeck - Always-On-Top Command Pad for Terminal Shortcuts
+# CmdDeck - Software Macro Pad for Terminal Commands
 
 [![Release](https://img.shields.io/github/v/release/taylorivanoff/cmd-deck)](https://github.com/taylorivanoff/cmd-deck/releases)
 [![Downloads](https://img.shields.io/github/downloads/taylorivanoff/cmd-deck/total)](https://github.com/taylorivanoff/cmd-deck/releases)
