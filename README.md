@@ -68,7 +68,147 @@ Optional repo secrets for signed builds:
 2. Enter a command and pick **Run with** (PowerShell, cmd, etc.)
 3. Optionally enable **Show terminal window**, set a display name, image, and working directory
 4. Click a button to run; click again while running to stop
-5. Right-click a button to edit or delete
+5. Right-click a button for Run / Edit / Duplicate / Delete
+
+## Example macros
+
+Think in **workflows**, not one-off commands: each button should replace a ritual you repeat (start the day, ship a PR, prep a meeting). Set **Working directory** per macro when it matters. Use **Show terminal window** for anything long-running or that you need to watch.
+
+CmdDeck supports **multi-line** commands — paste a small script into the Command field.
+
+### Developer workflows
+
+**Boot this project** (set cwd to the app; PowerShell / zsh):
+
+```bash
+git pull
+composer install
+npm install
+php artisan migrate
+docker compose up -d
+```
+
+**Start coding session** (Laravel + Vite; enable Show terminal, or split into two buttons):
+
+```bash
+docker compose up -d
+php artisan queue:work &
+npm run dev
+```
+
+On Windows PowerShell, prefer separate buttons for `queue:work` and `npm run dev` (or run them in two macros) so you can stop each one cleanly.
+
+**Ship check before PR** (set cwd to the repo):
+
+```bash
+git status
+npm run lint
+npm test
+gh pr checks
+```
+
+**Hotfix local data** (local DB only — destructive):
+
+```bash
+php artisan migrate:fresh --seed
+php artisan cache:clear
+php artisan config:clear
+php artisan view:clear
+```
+
+**Unstick a busy port, then serve** (PowerShell):
+
+```powershell
+Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue |
+  ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
+php artisan serve
+```
+
+**Unstick a busy port, then serve** (zsh):
+
+```bash
+lsof -ti:8000 | xargs kill 2>/dev/null
+php artisan serve
+```
+
+Handy single-button companions (same cwd):
+
+| Button | Command | Notes |
+| --- | --- | --- |
+| Queue | `php artisan queue:work` | Show terminal |
+| Frontend | `npm run dev` | Show terminal |
+| Logs | `docker compose logs -f --tail=200` | Show terminal |
+| Open in editor | `code .` | Instant |
+
+### Everyday workflows
+
+**Start workday** — open the tools you always need (Windows, PowerShell; edit URLs/apps):
+
+```powershell
+Start-Process "https://mail.google.com"
+Start-Process "https://calendar.google.com"
+Start-Process "https://github.com/notifications"
+Start-Process "slack://"
+code "$env:USERPROFILE\Projects"
+```
+
+**Start workday** (macOS, zsh):
+
+```bash
+open https://mail.google.com
+open https://calendar.google.com
+open https://github.com/notifications
+open -a Slack
+code ~/Projects
+```
+
+**Meeting prep** — pull notes folder + open call link (edit paths/URL):
+
+```powershell
+$notes = "$env:USERPROFILE\Documents\MeetingNotes"
+Start-Process explorer.exe $notes
+Start-Process "https://meet.google.com/your-room"
+```
+
+```bash
+open ~/Documents/MeetingNotes
+open "https://meet.google.com/your-room"
+```
+
+**Client delivery zip** — stage today’s folder and compress (Windows, PowerShell; edit paths):
+
+```powershell
+$day = Get-Date -Format yyyy-MM-dd
+$src = "$env:USERPROFILE\Documents\Clients\Acme\Outgoing"
+$dst = "$env:USERPROFILE\Desktop\Acme-$day.zip"
+Compress-Archive -Path "$src\*" -DestinationPath $dst -Force
+explorer.exe /select,$dst
+```
+
+**Weekly project backup** (Windows, PowerShell):
+
+```powershell
+$src = "$env:USERPROFILE\Projects"
+$dst = "D:\Backups\Projects-$(Get-Date -Format yyyy-MM-dd)"
+New-Item -ItemType Directory -Force -Path $dst | Out-Null
+robocopy $src $dst /MIR /R:1 /W:1 /NFL /NDL /NJH /NJS
+Write-Host "Backup complete: $dst"
+```
+
+**Tidy Downloads older than 30 days** (Windows, PowerShell):
+
+```powershell
+$downloads = [Environment]::GetFolderPath("UserProfile") + "\Downloads"
+Get-ChildItem $downloads -File |
+  Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } |
+  Remove-Item -Force
+Write-Host "Old Downloads cleaned."
+```
+
+```bash
+find ~/Downloads -type f -mtime +30 -delete
+echo "Old Downloads cleaned."
+```
 
 ## Notes
 

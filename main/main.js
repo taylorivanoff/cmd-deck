@@ -161,10 +161,12 @@ function createSplash() {
   const splashPath = path.join(app.getAppPath(), 'resources', 'splash.html');
   // Opaque window (not transparent): on Windows, mainWindow.setOpacity can
   // bleed into other transparent BrowserWindows in the same process.
+  // show:false until ready-to-show so we never flash an empty solid frame.
   splashWindow = new BrowserWindow({
     width: 280,
     height: 320,
     frame: false,
+    show: false,
     transparent: false,
     backgroundColor: '#1c1c1e',
     alwaysOnTop: true,
@@ -174,11 +176,13 @@ function createSplash() {
     fullscreenable: false,
     webPreferences: { nodeIntegration: false }
   });
-  splashWindow.setOpacity(1);
   splashWindow.setMenu(null);
+  splashWindow.once('ready-to-show', () => {
+    if (!splashWindow || splashWindow.isDestroyed()) return;
+    splashWindow.center();
+    splashWindow.show();
+  });
   splashWindow.loadFile(splashPath);
-  splashWindow.center();
-  splashWindow.show();
 }
 
 function closeSplash() {
@@ -256,8 +260,8 @@ function createWindow() {
   }
 
   mainWindow.setMenu(null);
-  // Keep main at full opacity until splash closes (see applyWindowOpacity).
-  mainWindow.setOpacity(1);
+  // Do not call setOpacity while splash is open — on Windows that can blank
+  // sibling BrowserWindows. Default opacity is already 1 until splash closes.
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 
   mainWindow.webContents.on('did-finish-load', () => {
@@ -368,10 +372,6 @@ function sendToRenderer(channel, payload) {
   if (settingsWin) settingsWin.webContents.send(channel, payload);
 }
 
-function showUpdateDialog(options) {
-  return dialog.showMessageBox({ noLink: true, ...options });
-}
-
 async function checkForUpdates(manual = false) {
   if (!app.isPackaged) return;
   manualUpdateCheck = manual;
@@ -390,28 +390,10 @@ function setupAutoUpdater() {
     manualUpdateCheck = false;
   });
 
-  autoUpdater.on('update-downloaded', (info) => {
-    const installNow = manualUpdateCheck;
+  autoUpdater.on('update-downloaded', () => {
     manualUpdateCheck = false;
-    if (installNow) {
-      isQuitting = true;
-      autoUpdater.quitAndInstall(true, true);
-      return;
-    }
-    showUpdateDialog({
-      type: 'info',
-      title: APP_NAME,
-      message: `Version ${info.version} is ready to install.`,
-      detail: 'Restart the app to apply the update.',
-      buttons: ['Restart now', 'Later'],
-      defaultId: 0,
-      cancelId: 1
-    }).then(({ response }) => {
-      if (response === 0) {
-        isQuitting = true;
-        autoUpdater.quitAndInstall(true, true);
-      }
-    });
+    isQuitting = true;
+    autoUpdater.quitAndInstall(true, true);
   });
 
   autoUpdater.on('error', () => {
