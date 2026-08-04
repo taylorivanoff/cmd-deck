@@ -23,8 +23,22 @@ Ideal for developers and power users who want a lightweight **desktop command pa
 
 ## Installation
 
+### Windows / Linux
+
 1. Download the latest installer from [Releases](https://github.com/taylorivanoff/cmd-deck/releases)
 2. Run the installer and follow the prompts
+
+### macOS
+
+1. Download the `.dmg` from [Releases](https://github.com/taylorivanoff/cmd-deck/releases) and drag **CmdDeck** to Applications
+2. macOS may say the app is “damaged” — that is Gatekeeper blocking an unsigned download, not a bad file. Clear quarantine, then open:
+
+```bash
+xattr -cr /Applications/CmdDeck.app
+open /Applications/CmdDeck.app
+```
+
+Or right-click the app → **Open** → **Open**. Full notarization needs an Apple Developer ID (optional later).
 
 ## Development
 
@@ -41,12 +55,12 @@ bun run release
 
 ### Releasing
 
-Bump the `version` in `package.json` and push to `master`. The GitHub Actions workflow builds a Windows installer, uploads `latest.yml` / blockmap for auto-updates, and creates a GitHub Release.
+Bump the `version` in `package.json` and push to `master`. The GitHub Actions workflow builds Windows, macOS, and Linux installers, uploads updater metadata, and creates a GitHub Release.
 
 Optional repo secrets for signed builds:
 
-- `WIN_CSC_LINK`
-- `WIN_CSC_KEY_PASSWORD`
+- `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD` (Windows)
+- `CSC_LINK` / `CSC_KEY_PASSWORD` plus Apple notarization env vars (macOS Developer ID)
 
 ## Usage
 
