@@ -3,7 +3,6 @@
 [![Release](https://img.shields.io/github/v/release/taylorivanoff/cmd-deck)](https://github.com/taylorivanoff/cmd-deck/releases)
 [![Downloads](https://img.shields.io/github/downloads/taylorivanoff/cmd-deck/total)](https://github.com/taylorivanoff/cmd-deck/releases)
 [![License](https://img.shields.io/github/license/taylorivanoff/cmd-deck)](LICENSE)
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat&logo=buy-me-a-coffee)](https://buymeacoffee.com/taylorivanoff)
 
 **CmdDeck** is a free, cross-platform **Stream Deck-style command launcher** for Windows and macOS. Build an always-on-top button pad that runs shell commands, scripts, and terminal shortcuts in the background - choosing which shell runs each command (PowerShell, cmd, pwsh, Git Bash, zsh, bash) and optionally attaching a console to monitor output.
 

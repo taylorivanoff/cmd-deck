@@ -6,7 +6,8 @@ const {
   dialog,
   screen,
   shell,
-  nativeTheme
+  nativeTheme,
+  Notification
 } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
@@ -385,6 +386,15 @@ async function checkForUpdates(manual = false) {
 function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-available', (info) => {
+    if (!Notification.isSupported()) return;
+    new Notification({
+      title: APP_NAME,
+      body: `Update ${info.version} found. The app will update and restart.`,
+      icon: getIconPath()
+    }).show();
+  });
 
   autoUpdater.on('update-not-available', () => {
     manualUpdateCheck = false;
@@ -812,6 +822,9 @@ function registerIpc() {
 }
 
 app.whenReady().then(() => {
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('io.github.taylorivanoff.cmd-deck');
+  }
   syncLoginItemArgs();
   createSplash();
   registerIpc();

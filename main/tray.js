@@ -45,6 +45,7 @@ function updateTrayMenu(handlers) {
     },
     { type: 'separator' },
     { label: 'Check for Updates', click: () => handlers.checkForUpdates() },
+    { label: `Version ${app.getVersion()}`, enabled: false },
     { label: 'Quit', click: () => handlers.quit() }
   ]));
 }
