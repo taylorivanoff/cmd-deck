@@ -373,30 +373,11 @@ function showUpdateDialog(options) {
 }
 
 async function checkForUpdates(manual = false) {
-  if (!app.isPackaged) {
-    if (manual) {
-      await showUpdateDialog({
-        type: 'info',
-        title: APP_NAME,
-        message: 'Updates are only available in the installed app.',
-        buttons: ['OK']
-      });
-    }
-    return;
-  }
+  if (!app.isPackaged) return;
   manualUpdateCheck = manual;
   try {
     await autoUpdater.checkForUpdates();
-  } catch (err) {
-    if (manual) {
-      await showUpdateDialog({
-        type: 'error',
-        title: APP_NAME,
-        message: 'Could not check for updates.',
-        detail: err?.message || String(err),
-        buttons: ['OK']
-      });
-    }
+  } catch (_) {
     manualUpdateCheck = false;
   }
 }
@@ -405,31 +386,18 @@ function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
-  autoUpdater.on('update-available', (info) => {
-    if (!manualUpdateCheck) return;
-    showUpdateDialog({
-      type: 'info',
-      title: APP_NAME,
-      message: `Update ${info.version} available.`,
-      detail: 'Downloading in the background. You will be prompted when it is ready to install.',
-      buttons: ['OK']
-    });
-  });
-
-  autoUpdater.on('update-not-available', (info) => {
-    if (!manualUpdateCheck) return;
+  autoUpdater.on('update-not-available', () => {
     manualUpdateCheck = false;
-    showUpdateDialog({
-      type: 'info',
-      title: APP_NAME,
-      message: 'You are up to date.',
-      detail: `Version ${info?.version || app.getVersion()} is the latest.`,
-      buttons: ['OK']
-    });
   });
 
   autoUpdater.on('update-downloaded', (info) => {
+    const installNow = manualUpdateCheck;
     manualUpdateCheck = false;
+    if (installNow) {
+      isQuitting = true;
+      autoUpdater.quitAndInstall(true, true);
+      return;
+    }
     showUpdateDialog({
       type: 'info',
       title: APP_NAME,
@@ -446,16 +414,8 @@ function setupAutoUpdater() {
     });
   });
 
-  autoUpdater.on('error', (err) => {
-    if (!manualUpdateCheck) return;
+  autoUpdater.on('error', () => {
     manualUpdateCheck = false;
-    showUpdateDialog({
-      type: 'error',
-      title: APP_NAME,
-      message: 'Could not check for updates.',
-      detail: err?.message || String(err),
-      buttons: ['OK']
-    });
   });
 
   checkForUpdates(false);
