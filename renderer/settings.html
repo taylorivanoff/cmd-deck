@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body class="dialog-page">
+  <div class="dialog-sheet compact">
+    <label class="toggle-row">
+      <span>Always on top</span>
+      <input type="checkbox" id="setting-aot" />
+    </label>
+    <label class="toggle-row">
+      <span>Start minimised</span>
+      <input type="checkbox" id="setting-minimised" />
+    </label>
+    <label class="field">
+      <span>Columns</span>
+      <input type="range" id="setting-columns" min="2" max="8" step="1" />
+      <output id="setting-columns-out">3</output>
+    </label>
+    <label class="field">
+      <span>Rows</span>
+      <input type="range" id="setting-rows" min="1" max="8" step="1" />
+      <output id="setting-rows-out">3</output>
+    </label>
+    <label class="field">
+      <span>Transparency</span>
+      <input type="range" id="setting-opacity" min="0" max="65" step="1" />
+      <output id="setting-opacity-out">6%</output>
+    </label>
+    <p class="meta" id="settings-meta"></p>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+
+</html>

@@ -20,6 +20,12 @@ const {
   closeTerminalWindow,
   closeAllTerminalWindows
 } = require('./terminal-window');
+const {
+  openEditorWindow,
+  openSettingsWindow,
+  getSettingsWindow,
+  closeDialogWindows
+} = require('./dialog-windows');
 const shells = require('./shells');
 const { createTray, updateTrayMenu, destroyTray, getIconPath } = require('./tray');
 
@@ -284,6 +290,8 @@ function sendToRenderer(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send(channel, payload);
   }
+  const settingsWin = getSettingsWindow();
+  if (settingsWin) settingsWin.webContents.send(channel, payload);
 }
 
 function showUpdateDialog(options) {
@@ -537,8 +545,26 @@ function registerIpc() {
     return settings;
   });
 
-  ipcMain.handle('dialog:pickImage', async () => {
-    const result = await dialog.showOpenDialog(mainWindow, {
+  ipcMain.handle('ui:openEditor', (_e, id) => {
+    openEditorWindow({
+      macroId: id || null,
+      iconPath: getIconPath(),
+      parent: mainWindow
+    });
+    return { ok: true };
+  });
+
+  ipcMain.handle('ui:openSettings', () => {
+    openSettingsWindow({
+      iconPath: getIconPath(),
+      parent: mainWindow
+    });
+    return { ok: true };
+  });
+
+  ipcMain.handle('dialog:pickImage', async (event) => {
+    const owner = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    const result = await dialog.showOpenDialog(owner, {
       title: 'Choose button image',
       properties: ['openFile'],
       filters: [
@@ -553,8 +579,9 @@ function registerIpc() {
     }
   });
 
-  ipcMain.handle('dialog:pickFolder', async () => {
-    const result = await dialog.showOpenDialog(mainWindow, {
+  ipcMain.handle('dialog:pickFolder', async (event) => {
+    const owner = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    const result = await dialog.showOpenDialog(owner, {
       title: 'Choose working directory',
       properties: ['openDirectory']
     });
@@ -611,6 +638,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   isQuitting = true;
   saveWindowBounds(true);
+  closeDialogWindows();
   closeAllTerminalWindows();
   closeSplash();
   destroyTray();

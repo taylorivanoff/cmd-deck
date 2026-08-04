@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Macro</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body class="dialog-page">
+  <form class="dialog-sheet" id="editor-form">
+    <div class="sheet-body">
+      <label class="field">
+        <span>Command</span>
+        <textarea id="field-command" rows="3" placeholder="php -v&#10;npm start" required></textarea>
+      </label>
+
+      <label class="field" id="shell-field">
+        <span>Run with</span>
+        <select id="field-shell"></select>
+        <small class="field-hint" id="shell-hint">Uses this shell’s PATH and environment</small>
+      </label>
+
+      <label class="option-card" for="field-terminal">
+        <input type="checkbox" id="field-terminal" />
+        <span class="option-card-text">
+          <strong>Show terminal window</strong>
+          <small>Monitor output and cancel while it runs</small>
+        </span>
+      </label>
+
+      <label class="field">
+        <span>Display name <em>(optional)</em></span>
+        <input type="text" id="field-name" placeholder="Shown on the button" maxlength="80" />
+      </label>
+
+      <div class="field">
+        <span>Button image <em>(optional)</em></span>
+        <div class="image-row">
+          <div class="image-preview" id="image-preview" aria-hidden="true"></div>
+          <div class="image-actions">
+            <button type="button" class="btn" id="btn-pick-image">Choose image…</button>
+            <button type="button" class="btn ghost" id="btn-clear-image">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <label class="field">
+        <span>Working directory <em>(optional)</em></span>
+        <div class="inline-row">
+          <input type="text" id="field-cwd" placeholder="Defaults to home" />
+          <button type="button" class="btn" id="btn-pick-cwd">Browse…</button>
+        </div>
+      </label>
+    </div>
+
+    <footer class="sheet-footer">
+      <button type="button" class="btn danger ghost hidden" id="btn-delete">Delete</button>
+      <div class="spacer"></div>
+      <button type="button" class="btn ghost" id="btn-cancel">Cancel</button>
+      <button type="submit" class="btn primary" id="btn-save">Save</button>
+    </footer>
+  </form>
+
+  <div class="toast hidden" id="toast" role="status"></div>
+  <script src="editor.js"></script>
+</body>
+
+</html>
