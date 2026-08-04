@@ -10,19 +10,14 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 
-<body class="dialog-page">
-  <form class="dialog-sheet" id="editor-form">
-    <div class="sheet-body">
-      <label class="field">
-        <span>Command</span>
-        <textarea id="field-command" rows="3" placeholder="php -v&#10;npm start" required></textarea>
-      </label>
-
-      <div class="field" id="shell-field">
-        <span>Run with</span>
-        <div class="shell-picker" id="shell-picker">
+<body class="dialog-page editor-page">
+  <form class="editor-ide" id="editor-form">
+    <header class="ide-toolbar">
+      <div class="ide-toolbar-actions">
+        <div class="shell-picker ide-shell" id="shell-picker">
           <input type="hidden" id="field-shell" value="" />
-          <button type="button" class="shell-picker-trigger" id="shell-picker-trigger" aria-haspopup="listbox" aria-expanded="false">
+          <button type="button" class="shell-picker-trigger" id="shell-picker-trigger" aria-haspopup="listbox"
+            aria-expanded="false" title="Run with">
             <span class="shell-picker-text">
               <span class="shell-picker-name" id="shell-picker-name"></span>
               <span class="shell-picker-path" id="shell-picker-path"></span>
@@ -33,43 +28,60 @@
           </button>
           <ul class="shell-picker-menu hidden" id="shell-picker-menu" role="listbox"></ul>
         </div>
-        <small class="field-hint" id="shell-hint">Uses this shell’s PATH and environment</small>
+        <label class="ide-toggle" for="field-terminal" title="Show terminal window">
+          <input type="checkbox" id="field-terminal" />
+          <span>Terminal</span>
+        </label>
       </div>
+    </header>
 
-      <label class="option-card" for="field-terminal">
-        <input type="checkbox" id="field-terminal" />
-        <span class="option-card-text">
-          <strong>Show terminal window</strong>
-          <small>Monitor output and cancel while it runs</small>
-        </span>
-      </label>
+    <div class="ide-main">
+      <section class="ide-editor-pane" aria-label="Command editor">
+        <div class="code-editor" id="code-editor">
+          <pre class="code-gutter" id="code-gutter" aria-hidden="true">1</pre>
+          <textarea id="field-command" class="code-input" rows="12" spellcheck="false" wrap="off"
+            placeholder="# Enter command or multi-line script&#10;php -v&#10;npm start" required></textarea>
+        </div>
+        <footer class="ide-statusbar" id="ide-statusbar">
+          <span id="status-cursor">Ln 1, Col 1</span>
+          <span class="ide-status-sep" aria-hidden="true">·</span>
+          <span id="status-lines">1 line</span>
+          <span class="ide-status-sep" aria-hidden="true">·</span>
+          <span id="status-shell">PowerShell</span>
+          <span class="ide-status-hint">Tab indent · Ctrl+S save</span>
+        </footer>
+      </section>
 
-      <label class="field">
-        <span>Display name <em>(optional)</em></span>
-        <input type="text" id="field-name" placeholder="Shown on the button" maxlength="80" />
-      </label>
+      <aside class="ide-sidebar">
+        <label class="field">
+          <span>Display name</span>
+          <input type="text" id="field-name" placeholder="Button label" maxlength="80" />
+        </label>
 
-      <div class="field">
-        <span>Button image <em>(optional)</em></span>
-        <div class="image-row">
-          <div class="image-preview" id="image-preview" aria-hidden="true"></div>
-          <div class="image-actions">
-            <button type="button" class="btn" id="btn-pick-image">Choose image…</button>
-            <button type="button" class="btn ghost" id="btn-clear-image">Remove</button>
+        <div class="field">
+          <span>Button image</span>
+          <div class="image-row">
+            <div class="image-preview empty" id="image-preview" aria-hidden="true">None</div>
+            <div class="image-actions">
+              <button type="button" class="btn" id="btn-pick-image">Choose…</button>
+              <button type="button" class="btn ghost" id="btn-clear-image">Remove</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <label class="field">
-        <span>Working directory <em>(optional)</em></span>
-        <div class="inline-row">
-          <input type="text" id="field-cwd" placeholder="Defaults to home" />
-          <button type="button" class="btn" id="btn-pick-cwd">Browse…</button>
-        </div>
-      </label>
+        <label class="field">
+          <span>Working directory</span>
+          <div class="inline-row stacked">
+            <input type="text" id="field-cwd" placeholder="Defaults to home" />
+            <button type="button" class="btn" id="btn-pick-cwd">Browse…</button>
+          </div>
+        </label>
+
+        <p class="ide-sidebar-hint" id="shell-hint">Uses this shell’s PATH and environment</p>
+      </aside>
     </div>
 
-    <footer class="sheet-footer">
+    <footer class="sheet-footer ide-footer">
       <button type="button" class="btn danger ghost hidden" id="btn-delete">Delete</button>
       <div class="spacer"></div>
       <button type="button" class="btn ghost" id="btn-cancel">Cancel</button>

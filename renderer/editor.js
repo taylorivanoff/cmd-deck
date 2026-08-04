@@ -17,6 +17,10 @@
   const imagePreview = document.getElementById('image-preview');
   const btnDelete = document.getElementById('btn-delete');
   const toast = document.getElementById('toast');
+  const codeGutter = document.getElementById('code-gutter');
+  const statusCursor = document.getElementById('status-cursor');
+  const statusLines = document.getElementById('status-lines');
+  const statusShell = document.getElementById('status-shell');
 
   let shellOptions = [];
   let defaultShell = 'powershell';
@@ -57,8 +61,9 @@
     const pathText = shellPath(shell);
     shellPickerPath.textContent = pathText;
     shellPickerPath.hidden = !pathText;
-    shellPickerTrigger.title = pathText || shell?.name || '';
+    shellPickerTrigger.title = pathText || shell?.name || 'Run with';
     shellHint.textContent = 'Uses this shell’s PATH and environment';
+    statusShell.textContent = shell?.name || defaultShell;
   }
 
   function setShellValue(id) {
@@ -156,8 +161,88 @@
     window.close();
   }
 
+  function lineCount(text) {
+    if (!text) return 1;
+    let n = 1;
+    for (let i = 0; i < text.length; i++) {
+      if (text.charCodeAt(i) === 10) n++;
+    }
+    return n;
+  }
+
+  function syncGutter() {
+    const lines = lineCount(fieldCommand.value);
+    const width = String(lines).length;
+    let html = '';
+    for (let i = 1; i <= lines; i++) {
+      html += `${i}\n`;
+    }
+    codeGutter.textContent = html;
+    codeGutter.style.width = `${Math.max(2, width) + 1.25}ch`;
+    statusLines.textContent = lines === 1 ? '1 line' : `${lines} lines`;
+  }
+
+  function syncCursor() {
+    const value = fieldCommand.value;
+    const pos = fieldCommand.selectionStart || 0;
+    let line = 1;
+    let col = 1;
+    for (let i = 0; i < pos; i++) {
+      if (value.charCodeAt(i) === 10) {
+        line++;
+        col = 1;
+      } else {
+        col++;
+      }
+    }
+    statusCursor.textContent = `Ln ${line}, Col ${col}`;
+  }
+
+  function syncEditorChrome() {
+    syncGutter();
+    syncCursor();
+  }
+
+  function indentSelection(outdent) {
+    const start = fieldCommand.selectionStart;
+    const end = fieldCommand.selectionEnd;
+    const value = fieldCommand.value;
+    const tab = '\t';
+
+    if (start !== end) {
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+      const block = value.slice(lineStart, end);
+      const lines = block.split('\n');
+      const next = lines.map((line) => {
+        if (outdent) {
+          if (line.startsWith(tab)) return line.slice(1);
+          if (line.startsWith('  ')) return line.slice(2);
+          return line;
+        }
+        return tab + line;
+      }).join('\n');
+      fieldCommand.value = value.slice(0, lineStart) + next + value.slice(end);
+      fieldCommand.selectionStart = lineStart;
+      fieldCommand.selectionEnd = lineStart + next.length;
+    } else if (outdent) {
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+      const before = value.slice(lineStart, start);
+      if (before.endsWith(tab)) {
+        fieldCommand.value = value.slice(0, start - 1) + value.slice(start);
+        fieldCommand.selectionStart = fieldCommand.selectionEnd = start - 1;
+      } else if (before.endsWith('  ')) {
+        fieldCommand.value = value.slice(0, start - 2) + value.slice(start);
+        fieldCommand.selectionStart = fieldCommand.selectionEnd = start - 2;
+      }
+    } else {
+      fieldCommand.value = value.slice(0, start) + tab + value.slice(end);
+      fieldCommand.selectionStart = fieldCommand.selectionEnd = start + tab.length;
+    }
+    syncEditorChrome();
+  }
+
   async function saveEditor(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
     const payload = {
       command: fieldCommand.value,
       name: fieldName.value,
@@ -168,6 +253,7 @@
     };
     if (!payload.command.trim()) {
       showToast('Command is required', true);
+      fieldCommand.focus();
       return;
     }
 
@@ -193,6 +279,12 @@
     defaultShell = state.defaultShell || (state.platform === 'darwin' ? 'zsh' : 'powershell');
     document.body.classList.add(`platform-${state.platform || 'win32'}`);
     if (state.dark) document.body.classList.add('dark');
+    const hint = document.querySelector('.ide-status-hint');
+    if (hint) {
+      hint.textContent = state.platform === 'darwin'
+        ? 'Tab indent · ⌘S save'
+        : 'Tab indent · Ctrl+S save';
+    }
 
     const macro = editingId
       ? (state.macros || []).find((m) => m.id === editingId)
@@ -206,7 +298,10 @@
     populateShellOptions(macro?.shell || macro?.terminalApp || defaultShell);
     setImagePreview(macro?.imagePath || null);
     btnDelete.classList.toggle('hidden', !editingId);
+    syncEditorChrome();
     fieldCommand.focus();
+    const len = fieldCommand.value.length;
+    fieldCommand.setSelectionRange(len, len);
   }
 
   editorForm.addEventListener('submit', saveEditor);
@@ -230,6 +325,25 @@
     if (folder) fieldCwd.value = folder;
   });
 
+  fieldCommand.addEventListener('input', syncEditorChrome);
+  fieldCommand.addEventListener('scroll', () => {
+    codeGutter.scrollTop = fieldCommand.scrollTop;
+  });
+  fieldCommand.addEventListener('click', syncCursor);
+  fieldCommand.addEventListener('keyup', syncCursor);
+  fieldCommand.addEventListener('select', syncCursor);
+
+  fieldCommand.addEventListener('keydown', (event) => {
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      indentSelection(event.shiftKey);
+      return;
+    }
+    if (event.key === 'Enter' && !event.shiftKey) {
+      // keep default newline; status updates on input
+    }
+  });
+
   shellPickerTrigger.addEventListener('click', () => {
     if (shellPicker.classList.contains('is-open')) closeShellPicker();
     else openShellPicker();
@@ -240,6 +354,17 @@
   });
 
   document.addEventListener('keydown', (event) => {
+    const mod = event.metaKey || event.ctrlKey;
+    if (mod && event.key.toLowerCase() === 's') {
+      event.preventDefault();
+      saveEditor();
+      return;
+    }
+    if (mod && event.key === 'Enter') {
+      event.preventDefault();
+      saveEditor();
+      return;
+    }
     if (event.key === 'Escape') {
       if (shellPicker.classList.contains('is-open')) {
         event.preventDefault();

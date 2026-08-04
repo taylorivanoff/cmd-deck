@@ -383,40 +383,69 @@ function applyPhpRuntimeFixes(env) {
 }
 
 /**
+ * Color is opt-in: piped/background runs must not inherit FORCE_COLOR from a
+ * parent IDE (or force it themselves), or JSON CLIs like `gh --json` emit ANSI
+ * and break parsers (ConvertFrom-Json, jq, etc.).
+ */
+function applyColorMode(env, color) {
+  if (color) {
+    env.FORCE_COLOR = '1';
+    env.CLICOLOR_FORCE = '1';
+    if (env.COLORTERM == null) env.COLORTERM = 'truecolor';
+    if (env.TERM == null || env.TERM === 'dumb') env.TERM = 'xterm-256color';
+    delete env.NO_COLOR;
+    return;
+  }
+
+  env.NO_COLOR = '1';
+  env.FORCE_COLOR = '0';
+  delete env.CLICOLOR_FORCE;
+}
+
+/**
  * Build an environment closer to an interactive/login terminal than the
  * often-stale PATH Electron inherits from Finder/Start Menu/IDE launches.
+ *
+ * @param {{ color?: boolean }} [options]
+ *        color=true for visible consoles; false/omit for piped macro runs.
  */
-function buildProcessEnv() {
+function buildProcessEnv(options = {}) {
   const now = Date.now();
-  if (cachedEnv && now - cachedAt < CACHE_TTL_MS) {
-    return { ...cachedEnv };
-  }
+  if (!(cachedEnv && now - cachedAt < CACHE_TTL_MS)) {
+    const env = { ...process.env };
+    const toolBins = discoverToolBinDirs();
+    const mergedPath = uniquePaths(
+      toolBins.join(pathSep()),
+      resolveBasePath().join(pathSep())
+    );
 
-  const env = { ...process.env };
-  const toolBins = discoverToolBinDirs();
-  const mergedPath = uniquePaths(
-    toolBins.join(pathSep()),
-    resolveBasePath().join(pathSep())
-  );
+    const pathValue = mergedPath.join(pathSep());
+    env.PATH = pathValue;
+    if (process.platform === 'win32') {
+      env.Path = pathValue;
+    }
 
-  const pathValue = mergedPath.join(pathSep());
-  env.PATH = pathValue;
-  if (process.platform === 'win32') {
-    env.Path = pathValue;
-  }
-
-  // Ensure HOME-like vars exist for tools that expect them.
-  if (!env.HOME) env.HOME = os.homedir();
-  if (process.platform === 'win32') {
-    if (!env.USERPROFILE) env.USERPROFILE = os.homedir();
+    // Ensure HOME-like vars exist for tools that expect them.
     if (!env.HOME) env.HOME = os.homedir();
+    if (process.platform === 'win32') {
+      if (!env.USERPROFILE) env.USERPROFILE = os.homedir();
+      if (!env.HOME) env.HOME = os.homedir();
+    }
+
+    applyPhpRuntimeFixes(env);
+
+    // Strip color knobs from the cached base; apply per-call via options.color.
+    delete env.FORCE_COLOR;
+    delete env.CLICOLOR_FORCE;
+    delete env.NO_COLOR;
+
+    cachedEnv = env;
+    cachedAt = now;
   }
 
-  applyPhpRuntimeFixes(env);
-
-  cachedEnv = env;
-  cachedAt = now;
-  return { ...env };
+  const env = { ...cachedEnv };
+  applyColorMode(env, options.color === true);
+  return env;
 }
 
 function clearEnvCache() {

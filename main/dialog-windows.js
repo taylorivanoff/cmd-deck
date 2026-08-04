@@ -80,10 +80,10 @@ function openEditorWindow({ macroId = null, iconPath, parent, alwaysOnTop = fals
   }
 
   editorWindow = createAuxWindow({
-    width: 440,
-    height: 620,
-    minWidth: 360,
-    minHeight: 600,
+    width: 820,
+    height: 560,
+    minWidth: 640,
+    minHeight: 420,
     title,
     html: 'editor.html',
     query,

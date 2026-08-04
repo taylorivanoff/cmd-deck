@@ -4,6 +4,7 @@ const path = require('path');
 const os = require('os');
 const {
   buildProcessEnv,
+  clearEnvCache,
   whichExecutable,
   firstExisting,
   exists
@@ -397,7 +398,8 @@ function spawnWithShell(shellId, command, cwd) {
     windowsHide: true,
     detached: false,
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: buildProcessEnv()
+    // Piped stdio: never force ANSI (breaks gh --json, jq, ConvertFrom-Json, …).
+    env: buildProcessEnv({ color: false })
   });
 }
 
@@ -406,7 +408,7 @@ function launchVisibleShell(shellId, command, cwd) {
   if (!shell) return { ok: false, error: 'No shell available.' };
   const workdir = cwd && exists(cwd) ? cwd : undefined;
   const title = 'CmdDeck';
-  const env = buildProcessEnv();
+  const env = buildProcessEnv({ color: true });
 
   try {
     if (process.platform === 'win32') {
@@ -520,6 +522,13 @@ function warmRuntime() {
   defaultShellId();
 }
 
+/** Drop cached PATH/shells and rebuild from the current OS environment. */
+function reloadRuntime() {
+  clearEnvCache();
+  clearShellCache();
+  warmRuntime();
+}
+
 module.exports = {
   listShells,
   resolveShell,
@@ -528,5 +537,6 @@ module.exports = {
   spawnWithShell,
   launchVisibleShell,
   clearShellCache,
-  warmRuntime
+  warmRuntime,
+  reloadRuntime
 };

@@ -44,6 +44,7 @@ function updateTrayMenu(handlers) {
       click: (item) => handlers.setStartMinimised(item.checked)
     },
     { type: 'separator' },
+    { label: 'Reload PATH', click: () => handlers.reloadPath() },
     { label: 'Check for Updates', click: () => handlers.checkForUpdates() },
     { label: `Version ${app.getVersion()}`, enabled: false },
     { label: 'Quit', click: () => handlers.quit() }

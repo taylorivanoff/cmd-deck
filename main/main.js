@@ -850,6 +850,22 @@ app.whenReady().then(() => {
     getSettings: () => store.getSettings(),
     setAlwaysOnTop: applyAlwaysOnTop,
     setStartMinimised,
+    reloadPath: () => {
+      try {
+        shells.reloadRuntime();
+        logger.addLog('info', 'Reloaded PATH and shell detection');
+        if (Notification.isSupported()) {
+          new Notification({
+            title: APP_NAME,
+            body: 'PATH reloaded',
+            icon: getIconPath()
+          }).show();
+        }
+      } catch (err) {
+        const message = err?.message || String(err);
+        logger.addLog('error', `Failed to reload PATH: ${message}`);
+      }
+    },
     checkForUpdates: () => checkForUpdates(true),
     quit: () => {
       isQuitting = true;

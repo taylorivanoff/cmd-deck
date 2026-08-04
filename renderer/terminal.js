@@ -7,6 +7,7 @@
   const outputEl = document.getElementById('output');
   const btnStop = document.getElementById('btn-stop');
   const btnClose = document.getElementById('btn-close');
+  const term = new window.AnsiTerminal(outputEl);
 
   let finished = false;
 
@@ -24,13 +25,25 @@
     btnStop.disabled = state !== 'running';
   }
 
-  function append(text, className) {
+  function append(text, stream) {
     if (!text) return;
-    const span = document.createElement('span');
-    if (className) span.className = className;
-    span.textContent = text;
-    outputEl.appendChild(span);
-    outputEl.scrollTop = outputEl.scrollHeight;
+    if (stream === 'stderr') {
+      term.write(text, { className: 'stderr', fallbackFg: 'var(--stderr)' });
+      return;
+    }
+    if (stream === 'ok') {
+      term.write(text, { className: 'ok', fallbackFg: 'var(--success)' });
+      return;
+    }
+    if (stream === 'err') {
+      term.write(text, { className: 'err', fallbackFg: 'var(--danger)' });
+      return;
+    }
+    if (stream === 'meta-line') {
+      term.write(text, { className: 'meta-line', fallbackFg: 'var(--muted)' });
+      return;
+    }
+    term.write(text);
   }
 
   function applyMeta(meta) {
@@ -41,7 +54,7 @@
 
   function applyRunningSnapshot(snapshot) {
     applyMeta(snapshot);
-    outputEl.textContent = '';
+    term.clear();
     if (snapshot?.stdout) append(snapshot.stdout);
     if (snapshot?.stderr) append(snapshot.stderr, 'stderr');
     setStatus('running', snapshot?.pid ? `Running · pid ${snapshot.pid}` : 'Running');

@@ -119,13 +119,24 @@ body {
   font-family: var(--font-mono);
   font-size: 12.5px;
   line-height: 1.45;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
+  tab-size: 8;
   user-select: text;
   -webkit-user-select: text;
+}
+
+.output .term-line {
+  min-height: 1.45em;
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .output .stderr { color: var(--stderr); }
 .output .meta-line { color: var(--muted); }
 .output .ok { color: var(--success); }
 .output .err { color: var(--danger); }
+.output .term-bold { font-weight: 700; }
+.output .term-dim { opacity: 0.7; }
+.output .term-italic { font-style: italic; }
+.output .term-underline { text-decoration: underline; }
