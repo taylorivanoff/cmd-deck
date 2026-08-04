@@ -224,10 +224,18 @@
     ctxMenu.classList.remove('hidden');
 
     const edge = 8;
-    const { innerWidth, innerHeight } = window;
+    const innerWidth = document.documentElement.clientWidth || window.innerWidth;
+    const innerHeight = document.documentElement.clientHeight || window.innerHeight;
+    ctxMenu.style.maxHeight = `${Math.max(80, innerHeight - edge * 2)}px`;
     const rect = ctxMenu.getBoundingClientRect();
     let left = event.clientX;
     let top = event.clientY;
+
+    // Prefer opening above the pointer when there is not enough room below.
+    if (top + rect.height > innerHeight - edge && top - rect.height >= edge) {
+      top -= rect.height;
+    }
+
     if (left + rect.width > innerWidth - edge) left = innerWidth - rect.width - edge;
     if (top + rect.height > innerHeight - edge) top = innerHeight - rect.height - edge;
     if (left < edge) left = edge;
