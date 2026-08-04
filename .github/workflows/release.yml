@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+    paths: ['package.json']
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - id: check
+        run: |
+          OLD_VERSION=$(git show HEAD^:package.json | jq -r .version)
+          NEW_VERSION=$(jq -r .version package.json)
+          if [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+  build-and-release:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate changelog
+        id: changelog
+        shell: bash
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" -10)
+          else
+            COMMITS=$(git log --pretty=format:"- %s" ${LAST_TAG}..HEAD)
+          fi
+          echo "commits<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - name: Configure Windows code signing
+        shell: pwsh
+        env:
+          _WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          _WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          if (-not [string]::IsNullOrEmpty($env:_WIN_CSC_LINK)) {
+            "WIN_CSC_LINK=$($env:_WIN_CSC_LINK)" | Out-File -FilePath $env:GITHUB_ENV -Append
+            "WIN_CSC_KEY_PASSWORD=$($env:_WIN_CSC_KEY_PASSWORD)" | Out-File -FilePath $env:GITHUB_ENV -Append
+            Write-Host "Windows code signing enabled."
+          } else {
+            Write-Host "No WIN_CSC_LINK secret — building unsigned."
+          }
+      - run: bun run release
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.check-version.outputs.version }}
+          files: |
+            dist/*.exe
+            dist/latest.yml
+            dist/*.blockmap
+          body: |
+            ## What's Changed
+            ${{ steps.changelog.outputs.commits }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

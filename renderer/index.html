@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CmdDeck</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="titlebar">
+      <div class="titlebar-drag">
+        <h1 class="app-title">CmdDeck</h1>
+      </div>
+      <div class="titlebar-actions">
+        <button type="button" class="icon-btn" id="btn-settings" title="Settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.15 7.15 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.57.23-1.11.54-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.77 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.43.34.68.22l2.39-.96c.5.4 1.05.72 1.62.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.57-.22 1.12-.54 1.62-.94l2.39.96c.25.12.54.02.68-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/>
+          </svg>
+        </button>
+        <button type="button" class="icon-btn primary" id="btn-add" title="Add macro" aria-label="Add macro">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="pad" id="pad" aria-label="Macro buttons"></main>
+
+    <p class="hint" id="hint">Click a button to run. Right-click to edit.</p>
+  </div>
+
+  <!-- Edit / Add dialog -->
+  <div class="overlay hidden" id="editor-overlay" role="dialog" aria-modal="true" aria-labelledby="editor-title">
+    <form class="sheet" id="editor-form">
+      <header class="sheet-header">
+        <h2 id="editor-title">Add Macro</h2>
+        <button type="button" class="icon-btn" id="editor-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </header>
+
+      <div class="sheet-body">
+        <label class="field">
+          <span>Command</span>
+          <textarea id="field-command" rows="3" placeholder="npm start&#10;or multi-line scripts…" required></textarea>
+        </label>
+
+        <label class="option-card" for="field-terminal">
+          <input type="checkbox" id="field-terminal" />
+          <span class="option-card-text">
+            <strong>Show terminal window</strong>
+            <small>Monitor output and cancel while it runs</small>
+          </span>
+        </label>
+
+        <label class="field">
+          <span>Display name <em>(optional)</em></span>
+          <input type="text" id="field-name" placeholder="Shown on the button" maxlength="80" />
+        </label>
+
+        <div class="field">
+          <span>Button image <em>(optional)</em></span>
+          <div class="image-row">
+            <div class="image-preview" id="image-preview" aria-hidden="true"></div>
+            <div class="image-actions">
+              <button type="button" class="btn" id="btn-pick-image">Choose image…</button>
+              <button type="button" class="btn ghost" id="btn-clear-image">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Working directory <em>(optional)</em></span>
+          <div class="inline-row">
+            <input type="text" id="field-cwd" placeholder="Defaults to home" />
+            <button type="button" class="btn" id="btn-pick-cwd">Browse…</button>
+          </div>
+        </label>
+      </div>
+
+      <footer class="sheet-footer">
+        <button type="button" class="btn danger ghost hidden" id="btn-delete">Delete</button>
+        <div class="spacer"></div>
+        <button type="button" class="btn ghost" id="btn-cancel">Cancel</button>
+        <button type="submit" class="btn primary" id="btn-save">Save</button>
+      </footer>
+    </form>
+  </div>
+
+  <!-- Settings dialog -->
+  <div class="overlay hidden" id="settings-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="sheet compact">
+      <header class="sheet-header">
+        <h2 id="settings-title">Settings</h2>
+        <button type="button" class="icon-btn" id="settings-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </header>
+
+      <label class="toggle-row">
+        <span>Always on top</span>
+        <input type="checkbox" id="setting-aot" />
+      </label>
+      <label class="toggle-row">
+        <span>Start minimised</span>
+        <input type="checkbox" id="setting-minimised" />
+      </label>
+      <label class="field">
+        <span>Columns</span>
+        <input type="range" id="setting-columns" min="2" max="6" step="1" />
+        <output id="setting-columns-out">3</output>
+      </label>
+      <p class="meta" id="settings-meta"></p>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast" role="status"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

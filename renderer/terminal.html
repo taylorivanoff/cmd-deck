@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CmdDeck Terminal</title>
+  <link rel="stylesheet" href="terminal.css" />
+</head>
+<body>
+  <header class="bar">
+    <div class="meta">
+      <div class="name" id="name">Command</div>
+      <div class="command" id="command"></div>
+    </div>
+    <div class="status" id="status" data-state="running">Running</div>
+    <div class="actions">
+      <button type="button" class="btn danger" id="btn-stop">Cancel</button>
+      <button type="button" class="btn ghost" id="btn-close">Close</button>
+    </div>
+  </header>
+  <pre class="output" id="output" aria-live="polite"></pre>
+  <script src="terminal.js"></script>
+</body>
+</html>
