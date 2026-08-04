@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="CmdDeck">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c1c1e"/>
+      <stop offset="100%" stop-color="#243b4a"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3a4550"/>
+      <stop offset="100%" stop-color="#2c343c"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="14" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <!-- 2x2 command pad -->
+  <g transform="translate(196 196)">
+    <rect width="280" height="280" rx="64" fill="url(#tile)"/>
+    <rect x="352" width="280" height="280" rx="64" fill="url(#tile)"/>
+    <rect y="352" width="280" height="280" rx="64" fill="url(#tile)"/>
+    <rect x="352" y="352" width="280" height="280" rx="64" fill="#4cc2ff" filter="url(#glow)"/>
+    <!-- subtle inset marks on inactive tiles -->
+    <circle cx="140" cy="140" r="28" fill="#1c1c1e" opacity="0.35"/>
+    <circle cx="492" cy="140" r="28" fill="#1c1c1e" opacity="0.35"/>
+    <circle cx="140" cy="492" r="28" fill="#1c1c1e" opacity="0.35"/>
+    <circle cx="492" cy="492" r="36" fill="#00344d" opacity="0.45"/>
+  </g>
+</svg>
