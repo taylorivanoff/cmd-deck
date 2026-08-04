@@ -87,7 +87,7 @@ CmdDeck supports **multi-line** commands — paste a small script into the Comma
 
 ### Developer workflows
 
-**Boot this project** (set cwd to the app; PowerShell / zsh):
+**Boot a project** (set cwd to the app; PowerShell / zsh):
 
 ```bash
 git pull
@@ -97,15 +97,13 @@ php artisan migrate
 docker compose up -d
 ```
 
-**Start coding session** (Laravel + Vite; enable Show terminal, or split into two buttons):
+**Start a coding session** (Laravel + Vite; enable Show terminal, or split into two buttons):
 
 ```bash
 docker compose up -d
 php artisan queue:work &
 npm run dev
 ```
-
-On Windows PowerShell, prefer separate buttons for `queue:work` and `npm run dev` (or run them in two macros) so you can stop each one cleanly.
 
 **Ship check before PR** (set cwd to the repo):
 
@@ -116,7 +114,28 @@ npm test
 gh pr checks
 ```
 
-**Hotfix local data** (local DB only — destructive):
+**GitHub public repository download counts and stars** (PowerShell; requires authenticated `gh`):
+
+```powershell
+gh repo list --visibility public --limit 1000 --json nameWithOwner,stargazerCount |
+  ConvertFrom-Json |
+  ForEach-Object {
+    $repo = $_.nameWithOwner
+    $stars = $_.stargazerCount
+    $downloads = 0
+    gh api "repos/$repo/releases" --paginate --jq '[.[].assets[].download_count] | add // 0' 2>$null |
+      ForEach-Object { $downloads += [int]$_ }
+    [pscustomobject]@{
+      Repo      = $repo
+      Stars     = $stars
+      Downloads = $downloads
+    }
+  } |
+  Sort-Object Downloads, Stars -Descending |
+  Format-Table -AutoSize
+```
+
+**Hotfix local data**:
 
 ```bash
 php artisan migrate:fresh --seed
@@ -171,7 +190,7 @@ open -a Slack
 code ~/Projects
 ```
 
-**Meeting prep** — pull notes folder + open call link (edit paths/URL):
+**Meeting prep** - pull notes folder + open call link (edit paths/URL):
 
 ```powershell
 $notes = "$env:USERPROFILE\Documents\MeetingNotes"
@@ -184,7 +203,7 @@ open ~/Documents/MeetingNotes
 open "https://meet.google.com/your-room"
 ```
 
-**Client delivery zip** — stage today’s folder and compress (Windows, PowerShell; edit paths):
+**Client delivery zip** - stage today’s folder and compress (Windows, PowerShell; edit paths):
 
 ```powershell
 $day = Get-Date -Format yyyy-MM-dd
