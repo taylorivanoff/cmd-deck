@@ -10,6 +10,35 @@
   const term = new window.AnsiTerminal(outputEl);
 
   let finished = false;
+  let startedAt = 0;
+  let elapsedTimer = null;
+
+  function formatElapsed(ms) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const seconds = totalSeconds % 60;
+    const minutes = Math.floor(totalSeconds / 60) % 60;
+    const hours = Math.floor(totalSeconds / 3600);
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  function runningStatusText(pid) {
+    const elapsed = formatElapsed(Date.now() - startedAt);
+    return pid ? `Running · ${elapsed} · pid ${pid}` : `Running · ${elapsed}`;
+  }
+
+  function refreshRunningStatus(pid) {
+    if (!startedAt || finished) return;
+    setStatus('running', runningStatusText(pid));
+  }
+
+  function startElapsedTimer(pid) {
+    clearInterval(elapsedTimer);
+    refreshRunningStatus(pid);
+    elapsedTimer = setInterval(() => refreshRunningStatus(pid), 1000);
+  }
 
   function labelFrom(meta) {
     const name = (meta?.name || '').trim();
@@ -57,17 +86,20 @@
     term.clear();
     if (snapshot?.stdout) append(snapshot.stdout);
     if (snapshot?.stderr) append(snapshot.stderr, 'stderr');
-    setStatus('running', snapshot?.pid ? `Running · pid ${snapshot.pid}` : 'Running');
+    startedAt = Number(snapshot?.startedAt) || Date.now();
     finished = false;
+    startElapsedTimer(snapshot?.pid);
   }
 
   function onFinished(payload) {
     finished = true;
+    clearInterval(elapsedTimer);
+    const duration = formatElapsed(Date.now() - (Number(payload?.startedAt) || startedAt || Date.now()));
     if (payload?.status === 'success') {
-      setStatus('success', payload.code === 0 || payload.code == null ? 'Finished' : `Exit ${payload.code}`);
+      setStatus('success', `${payload.code === 0 || payload.code == null ? 'Finished' : `Exit ${payload.code}`} · ${duration}`);
       append(`\n[exit ${payload.code ?? 0}]\n`, 'ok');
     } else {
-      setStatus('error', 'Failed');
+      setStatus('error', `Failed · ${duration}`);
       append(`\n[${payload?.error || 'Command failed'}]\n`, 'err');
     }
   }
@@ -96,7 +128,8 @@
     if (payload?.id !== id) return;
     if (payload.status === 'running') {
       applyMeta(payload);
-      setStatus('running', payload.pid ? `Running · pid ${payload.pid}` : 'Running');
+      startedAt = Number(payload.startedAt) || startedAt || Date.now();
+      startElapsedTimer(payload.pid);
       finished = false;
       return;
     }

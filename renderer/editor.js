@@ -17,6 +17,9 @@
   const imagePreview = document.getElementById('image-preview');
   const btnDelete = document.getElementById('btn-delete');
   const toast = document.getElementById('toast');
+  const deleteDialog = document.getElementById('delete-dialog');
+  const deleteCancel = document.getElementById('delete-cancel');
+  const deleteConfirm = document.getElementById('delete-confirm');
   const codeGutter = document.getElementById('code-gutter');
   const statusCursor = document.getElementById('status-cursor');
   const statusLines = document.getElementById('status-lines');
@@ -265,10 +268,38 @@
     closeWindow();
   }
 
+  function askDeleteConfirmation() {
+    deleteDialog.classList.remove('hidden');
+    deleteConfirm.focus();
+
+    return new Promise((resolve) => {
+      const finish = (confirmed) => {
+        deleteDialog.classList.add('hidden');
+        deleteCancel.removeEventListener('click', onCancel);
+        deleteConfirm.removeEventListener('click', onConfirm);
+        deleteDialog.removeEventListener('click', onBackdrop);
+        document.removeEventListener('keydown', onKeyDown);
+        resolve(confirmed);
+      };
+      const onCancel = () => finish(false);
+      const onConfirm = () => finish(true);
+      const onBackdrop = (event) => {
+        if (event.target === deleteDialog) finish(false);
+      };
+      const onKeyDown = (event) => {
+        if (event.key === 'Escape') finish(false);
+      };
+
+      deleteCancel.addEventListener('click', onCancel);
+      deleteConfirm.addEventListener('click', onConfirm);
+      deleteDialog.addEventListener('click', onBackdrop);
+      document.addEventListener('keydown', onKeyDown);
+    });
+  }
+
   async function deleteCurrent() {
     if (!editingId) return;
-    const ok = confirm('Delete this macro?');
-    if (!ok) return;
+    if (!await askDeleteConfirmation()) return;
     await window.cmdDeck.deleteMacro(editingId);
     closeWindow();
   }

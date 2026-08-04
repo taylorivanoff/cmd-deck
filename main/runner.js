@@ -75,6 +75,7 @@ function finalize(state, { code = null, signal = null, error = null } = {}) {
       status: 'error',
       shell: state.shell,
       showTerminal: state.showTerminal,
+      startedAt: state.startedAt,
       error
     });
     return;
@@ -87,7 +88,8 @@ function finalize(state, { code = null, signal = null, error = null } = {}) {
       code,
       signal,
       shell: state.shell,
-      showTerminal: state.showTerminal
+      showTerminal: state.showTerminal,
+      startedAt: state.startedAt
     });
     return;
   }
@@ -100,6 +102,7 @@ function finalize(state, { code = null, signal = null, error = null } = {}) {
     signal,
     shell: state.shell,
     showTerminal: state.showTerminal,
+    startedAt: state.startedAt,
     error: ok ? null : formatFailure(state, code, signal)
   });
 }
@@ -126,7 +129,8 @@ function attachChild(macro, child, shellId) {
     shell: shellId,
     showTerminal: state.showTerminal,
     name: state.name,
-    command: state.command
+    command: state.command,
+    startedAt: state.startedAt
   });
 
   child.stdout?.on('data', (chunk) => appendOutput(state, 'stdout', chunk));

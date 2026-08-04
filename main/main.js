@@ -473,7 +473,8 @@ function runMacroById(id) {
       command: macro.command,
       pid: running?.pid,
       stdout: running?.stdout || '',
-      stderr: running?.stderr || ''
+      stderr: running?.stderr || '',
+      startedAt: running?.startedAt
     });
   }
   return result;

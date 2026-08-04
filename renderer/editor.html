@@ -89,6 +89,18 @@
     </footer>
   </form>
 
+  <div class="confirm-backdrop hidden" id="delete-dialog" role="dialog" aria-modal="true"
+    aria-labelledby="delete-dialog-title">
+    <section class="confirm-dialog">
+      <h2 id="delete-dialog-title">Delete macro?</h2>
+      <p>This action cannot be undone.</p>
+      <div class="confirm-actions">
+        <button type="button" class="btn ghost" id="delete-cancel">Cancel</button>
+        <button type="button" class="btn danger" id="delete-confirm">Delete</button>
+      </div>
+    </section>
+  </div>
+
   <div class="toast hidden" id="toast" role="status"></div>
   <script src="editor.js"></script>
 </body>

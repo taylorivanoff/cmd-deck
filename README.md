@@ -69,6 +69,16 @@ Optional repo secrets for signed builds:
 4. Click a button to run; click again while running to stop
 5. Right-click a button for Run / Edit / Duplicate / Delete
 
+### Screenshots
+
+Main command grid:
+
+![CmdDeck main window](docs/images/main-window.png)
+
+Macro editor:
+
+![CmdDeck macro editor](docs/images/edit-macro.png)
+
 ## Example macros
 
 Think in **workflows**, not one-off commands: each button should replace a ritual you repeat (start the day, ship a PR, prep a meeting). Set **Working directory** per macro when it matters. Use **Show terminal window** for anything long-running or that you need to watch.
