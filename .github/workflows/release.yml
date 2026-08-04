@@ -47,12 +47,6 @@ jobs:
               dist/*.zip
               dist/latest-mac.yml
               dist/*.blockmap
-          - os: ubuntu-latest
-            args: --linux
-            artifacts: |
-              dist/*.AppImage
-              dist/*.deb
-              dist/latest-linux.yml
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -98,3 +92,4 @@ jobs:
             ${{ steps.changelog.outputs.commits }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

@@ -49,14 +49,6 @@
     "publish": {
       "provider": "generic",
       "url": "https://github.com/taylorivanoff/cmd-deck/releases/latest/download"
-    },
-    "linux": {
-      "icon": "resources/icon.png",
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "category": "Utility"
     }
   },
   "dependencies": {
