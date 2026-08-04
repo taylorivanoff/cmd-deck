@@ -7,7 +7,8 @@
   const settingRows = document.getElementById('setting-rows');
 
   let macros = [];
-  let settings = { columns: 3, rows: 3, opacity: 0.94, alwaysOnTop: true, startMinimised: false };
+  let settings = { columns: 3, rows: 3, opacity: 0.94, alwaysOnTop: true, startMinimised: false, sizeLocked: true };
+  const btnLock = document.getElementById('btn-lock');
   let running = new Set();
   let flash = new Map();
   let toastTimer = null;
@@ -39,6 +40,14 @@
   function applyLayout() {
     pad.style.setProperty('--columns', String(settings.columns || 3));
     pad.style.setProperty('--rows', String(settings.rows || 3));
+  }
+
+  function syncLockButton() {
+    const locked = settings.sizeLocked !== false;
+    btnLock.classList.toggle('is-on', locked);
+    btnLock.setAttribute('aria-pressed', locked ? 'true' : 'false');
+    btnLock.title = locked ? 'Unlock size' : 'Lock size';
+    btnLock.setAttribute('aria-label', locked ? 'Unlock size' : 'Lock size');
   }
 
   function syncGridInputs() {
@@ -335,6 +344,7 @@
     if (state.dark) document.body.classList.add('dark');
 
     syncGridInputs();
+    syncLockButton();
     render();
 
     window.cmdDeck.onMacrosChanged((next) => {
@@ -345,6 +355,7 @@
     window.cmdDeck.onSettingsChanged((next) => {
       settings = next || settings;
       syncGridInputs();
+      syncLockButton();
       render();
     });
 
@@ -375,6 +386,12 @@
 
   document.getElementById('btn-add').addEventListener('click', () => openEditor());
   document.getElementById('btn-settings').addEventListener('click', openSettings);
+  btnLock.addEventListener('click', async () => {
+    const next = settings.sizeLocked === false;
+    settings = { ...settings, sizeLocked: next };
+    syncLockButton();
+    await window.cmdDeck.setSettings({ sizeLocked: next });
+  });
 
   document.addEventListener('mousedown', (event) => {
     if (!ctxMenu.classList.contains('hidden') && !ctxMenu.contains(event.target)) {

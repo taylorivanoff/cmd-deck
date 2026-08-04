@@ -10,6 +10,7 @@ const store = new Store({
     opacity: 1,
     alwaysOnTop: true,
     startMinimised: false,
+    sizeLocked: true,
     windowBounds: null
   }
 });
@@ -90,7 +91,8 @@ function getSettings() {
     rows: clamp(store.get('rows', 3), 1, 32, 3),
     opacity: store.get('opacity', 0.94),
     alwaysOnTop: store.get('alwaysOnTop', true),
-    startMinimised: store.get('startMinimised', false)
+    startMinimised: store.get('startMinimised', false),
+    sizeLocked: store.get('sizeLocked', true)
   };
 }
 
@@ -100,6 +102,7 @@ function setSettings(partial) {
   if (partial.opacity !== undefined) store.set('opacity', clamp(partial.opacity, 0.35, 1, 0.94));
   if (partial.alwaysOnTop !== undefined) store.set('alwaysOnTop', !!partial.alwaysOnTop);
   if (partial.startMinimised !== undefined) store.set('startMinimised', !!partial.startMinimised);
+  if (partial.sizeLocked !== undefined) store.set('sizeLocked', !!partial.sizeLocked);
   return getSettings();
 }
 

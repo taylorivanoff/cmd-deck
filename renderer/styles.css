@@ -257,6 +257,27 @@ body.platform-darwin .app-title {
   background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
+.icon-btn.is-on {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+
+.icon-btn.is-on:hover {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.icon-btn .icon-unlock {
+  display: none;
+}
+
+.icon-btn:not(.is-on) .icon-lock {
+  display: none;
+}
+
+.icon-btn:not(.is-on) .icon-unlock {
+  display: block;
+}
+
 .pad {
   flex: 1;
   min-height: 0;

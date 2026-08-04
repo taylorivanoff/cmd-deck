@@ -233,6 +233,7 @@ function createWindow() {
     y: bounds.y,
     show: false,
     alwaysOnTop: settings.alwaysOnTop,
+    resizable: !settings.sizeLocked,
     minimizable: true,
     maximizable: false,
     fullscreenable: false,
@@ -744,6 +745,9 @@ function registerIpc() {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setAlwaysOnTop(settings.alwaysOnTop);
       setDialogWindowsAlwaysOnTop(settings.alwaysOnTop);
       setLogWindowAlwaysOnTop(settings.alwaysOnTop);
+    }
+    if (partial?.sizeLocked !== undefined && partial.sizeLocked !== prev.sizeLocked) {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setResizable(!settings.sizeLocked);
     }
     if (partial?.opacity !== undefined) applyWindowOpacity(settings.opacity);
     if (partial?.startMinimised !== undefined) syncLoginItemArgs();
