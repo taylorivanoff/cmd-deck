@@ -4,9 +4,9 @@
 [![Downloads](https://img.shields.io/github/downloads/taylorivanoff/cmd-deck/total)](https://github.com/taylorivanoff/cmd-deck/releases)
 [![License](https://img.shields.io/github/license/taylorivanoff/cmd-deck)](LICENSE)
 
-**CmdDeck** is a free, cross-platform **Stream Deck-style command launcher** for Windows and macOS. Build an always-on-top button pad that runs shell commands, scripts, and terminal shortcuts in the background - choosing which shell runs each command (PowerShell, cmd, pwsh, Git Bash, zsh, bash) and optionally attaching a console to monitor output.
+**CmdDeck** is an open-source, cross-platform **Stream Deck-style command launcher** for Windows and macOS. Build an always-on-top button macro pad that runs shell commands, scripts, and terminal shortcuts, choosing which shell runs each command (PowerShell, cmd, pwsh, Git Bash, zsh, bash) and optionally attaching a console to monitor output.
 
-Ideal for developers and power users who want a lightweight **desktop command palette** / macro pad without dedicated Stream Deck hardware.
+Ideal for developers or power users who want a lightweight **desktop command palette** / macro pad without dedicated hardware.
 
 ## Features
 
@@ -30,14 +30,7 @@ Ideal for developers and power users who want a lightweight **desktop command pa
 ### macOS
 
 1. Download the `.dmg` from [Releases](https://github.com/taylorivanoff/cmd-deck/releases) and drag **CmdDeck** to Applications
-2. macOS may say the app is “damaged” - that is Gatekeeper blocking an unsigned download, not a bad file. Clear quarantine, then open:
-
-```bash
-xattr -cr /Applications/CmdDeck.app
-open /Applications/CmdDeck.app
-```
-
-Or right-click the app → **Open** → **Open**. Full notarization needs an Apple Developer ID (optional later).
+2. macOS may say the app is “damaged” - that is Gatekeeper blocking an unsigned download, not a bad file. Go to System Preferences -> Security & Privacy, then "Open anyway".
 
 ## Development
 
@@ -55,11 +48,6 @@ bun run release
 ### Releasing
 
 Bump the `version` in `package.json` and push to `master`. The GitHub Actions workflow builds Windows and macOS installers, uploads updater metadata, and creates a GitHub Release.
-
-Optional repo secrets for signed builds:
-
-- `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD` (Windows)
-- `CSC_LINK` / `CSC_KEY_PASSWORD` plus Apple notarization env vars (macOS Developer ID)
 
 ## Usage
 
