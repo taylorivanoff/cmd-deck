@@ -1,17 +1,20 @@
-# CmdDeck
+# CmdDeck — Always-On-Top Command Pad for Terminal Shortcuts
 
 [![Release](https://img.shields.io/github/v/release/taylorivanoff/cmd-deck)](https://github.com/taylorivanoff/cmd-deck/releases)
 [![Downloads](https://img.shields.io/github/downloads/taylorivanoff/cmd-deck/total)](https://github.com/taylorivanoff/cmd-deck/releases)
 [![License](https://img.shields.io/github/license/taylorivanoff/cmd-deck)](LICENSE)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat&logo=buy-me-a-coffee)](https://buymeacoffee.com/taylorivanoff)
 
-Always-on-top Stream Deck–style pad for running terminal commands in the background. Cross-platform Electron app with native-looking UI on Windows and macOS.
+**CmdDeck** is a free, cross-platform **Stream Deck–style command launcher** for Windows and macOS. Build an always-on-top button pad that runs shell commands, scripts, and terminal shortcuts in the background — choosing which shell runs each command (PowerShell, cmd, pwsh, Git Bash, zsh, bash) and optionally attaching a console to monitor output.
+
+Ideal for developers and power users who want a lightweight **desktop command palette** / macro pad without dedicated Stream Deck hardware.
 
 ## Features
 
 - Compact **always-on-top** command grid (toggleable)
 - Run short or multi-line shell commands in the background
-- Optional **attached terminal window** per key to monitor output and cancel
+- **Run with** a selected shell so PATH/environment match that shell (e.g. tools available in PowerShell but not cmd)
+- Optional attached console per key to monitor output and cancel
 - Button face: custom image, display name, or command text fallback
 - Optional working directory per command
 - Tray icon with show/hide, always-on-top, start minimised, updates
@@ -48,16 +51,21 @@ Optional repo secrets for signed builds:
 ## Usage
 
 1. Click **+** (or the empty tile) to add a command
-2. Enter a command (required). Optionally set a display name, image, and working directory
-3. Click a button to run; click again while running to stop
-4. Right-click a button to edit or delete
-5. Use the gear icon for columns, always-on-top, and start-minimised
+2. Enter a command and pick **Run with** (PowerShell, cmd, etc.)
+3. Optionally enable **Show terminal window**, set a display name, image, and working directory
+4. Click a button to run; click again while running to stop
+5. Right-click a button to edit or delete
 
 ## Notes
 
-- On Windows, commands run through the system shell (`cmd`/`PowerShell` via `shell: true`)
-- On macOS/Linux, commands run via `zsh` (or `bash` if zsh is unavailable)
+- Windows detects PowerShell, PowerShell 7, Command Prompt, and Git Bash when installed
+- macOS detects zsh, bash, sh, and fish when installed
+- New keys default to PowerShell on Windows and zsh on macOS
 - Button images are copied into app user data so they stay available after you move the originals
+
+## Keywords
+
+Stream Deck alternative, command launcher, terminal shortcuts, macro pad, always-on-top command grid, Electron desktop app, Windows Terminal launcher, shell command buttons
 
 ## Contributing
 
