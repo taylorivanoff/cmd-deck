@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('cmdDeck', {
   setSettings: (partial) => ipcRenderer.invoke('settings:set', partial),
   pickImage: () => ipcRenderer.invoke('dialog:pickImage'),
   pickFolder: () => ipcRenderer.invoke('dialog:pickFolder'),
+  listShells: () => ipcRenderer.invoke('shells:list'),
   showItemInFolder: (filePath) => ipcRenderer.invoke('shell:showItem', filePath),
   onMacrosChanged: (cb) => {
     const listener = (_e, macros) => cb(macros);

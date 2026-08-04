@@ -1,29 +1,10 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
 const { EventEmitter } = require('events');
+const shells = require('./shells');
 
 const running = new Map();
 const events = new EventEmitter();
-
-function spawnCommand(command, cwd) {
-  if (process.platform === 'win32') {
-    return spawn(command, {
-      shell: true,
-      cwd,
-      windowsHide: true,
-      detached: false,
-      stdio: ['ignore', 'pipe', 'pipe']
-    });
-  }
-
-  const shell = fs.existsSync('/bin/zsh') ? '/bin/zsh' : '/bin/bash';
-  return spawn(shell, ['-lc', command], {
-    cwd,
-    detached: false,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env }
-  });
-}
 
 function runMacro(macro) {
   if (!macro?.command) {
@@ -34,16 +15,17 @@ function runMacro(macro) {
   }
 
   const cwd = macro.cwd && fs.existsSync(macro.cwd) ? macro.cwd : undefined;
+  const shellId = shells.migrateShellId(macro.shell || macro.terminalApp);
 
   let child;
   try {
-    child = spawnCommand(macro.command, cwd);
+    child = shells.spawnWithShell(shellId, macro.command, cwd);
   } catch (err) {
     return { ok: false, error: err.message || String(err) };
   }
 
-  attachChild(macro, child);
-  return { ok: true, pid: child.pid, showTerminal: !!macro.showTerminal };
+  attachChild(macro, child, shellId);
+  return { ok: true, pid: child.pid, showTerminal: !!macro.showTerminal, shell: shellId };
 }
 
 function appendOutput(state, stream, chunk) {
@@ -57,11 +39,12 @@ function appendOutput(state, stream, chunk) {
   });
 }
 
-function attachChild(macro, child) {
+function attachChild(macro, child, shellId) {
   const state = {
     id: macro.id,
     pid: child.pid,
     child,
+    shell: shellId,
     showTerminal: !!macro.showTerminal,
     name: macro.name || '',
     command: macro.command || '',
@@ -74,6 +57,7 @@ function attachChild(macro, child) {
     id: macro.id,
     status: 'running',
     pid: child.pid,
+    shell: shellId,
     showTerminal: state.showTerminal,
     name: state.name,
     command: state.command
@@ -87,6 +71,7 @@ function attachChild(macro, child) {
     events.emit('status', {
       id: macro.id,
       status: 'error',
+      shell: shellId,
       showTerminal: state.showTerminal,
       error: err.message || String(err)
     });
@@ -100,6 +85,7 @@ function attachChild(macro, child) {
       status,
       code,
       signal,
+      shell: shellId,
       showTerminal: state.showTerminal,
       error: code === 0 ? null : (state.stderr.trim() || (signal ? `Signal ${signal}` : `Exit code ${code}`))
     });
@@ -135,6 +121,7 @@ function getRunning(id) {
   return {
     id: state.id,
     pid: state.pid,
+    shell: state.shell,
     showTerminal: state.showTerminal,
     name: state.name,
     command: state.command,

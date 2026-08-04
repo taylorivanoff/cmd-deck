@@ -6,6 +6,8 @@ const store = new Store({
   defaults: {
     macros: [],
     columns: 3,
+    rows: 3,
+    opacity: 1,
     alwaysOnTop: true,
     startMinimised: false,
     windowBounds: null
@@ -30,6 +32,7 @@ function addMacro(partial) {
     imagePath: partial.imagePath || null,
     cwd: (partial.cwd || '').trim() || null,
     showTerminal: !!partial.showTerminal,
+    shell: (partial.shell || partial.terminalApp || '').trim() || null,
     createdAt: Date.now(),
     updatedAt: Date.now()
   };
@@ -50,6 +53,9 @@ function updateMacro(id, partial) {
     name: partial.name !== undefined ? String(partial.name).trim() : macros[index].name,
     cwd: partial.cwd !== undefined ? (String(partial.cwd).trim() || null) : macros[index].cwd,
     showTerminal: partial.showTerminal !== undefined ? !!partial.showTerminal : !!macros[index].showTerminal,
+    shell: partial.shell !== undefined
+      ? (String(partial.shell).trim() || null)
+      : (macros[index].shell || macros[index].terminalApp || null),
     updatedAt: Date.now()
   };
   setMacros(macros);
@@ -72,16 +78,26 @@ function reorderMacros(orderedIds) {
   return next;
 }
 
+function clamp(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
 function getSettings() {
   return {
-    columns: store.get('columns', 3),
+    columns: clamp(store.get('columns', 3), 2, 8, 3),
+    rows: clamp(store.get('rows', 3), 1, 8, 3),
+    opacity: store.get('opacity', 0.94),
     alwaysOnTop: store.get('alwaysOnTop', true),
     startMinimised: store.get('startMinimised', false)
   };
 }
 
 function setSettings(partial) {
-  if (partial.columns !== undefined) store.set('columns', Math.min(6, Math.max(2, Number(partial.columns) || 3)));
+  if (partial.columns !== undefined) store.set('columns', clamp(partial.columns, 2, 8, 3));
+  if (partial.rows !== undefined) store.set('rows', clamp(partial.rows, 1, 8, 3));
+  if (partial.opacity !== undefined) store.set('opacity', clamp(partial.opacity, 0.35, 1, 0.94));
   if (partial.alwaysOnTop !== undefined) store.set('alwaysOnTop', !!partial.alwaysOnTop);
   if (partial.startMinimised !== undefined) store.set('startMinimised', !!partial.startMinimised);
   return getSettings();

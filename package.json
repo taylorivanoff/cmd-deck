@@ -9,8 +9,7 @@
   "main": "main/main.js",
   "scripts": {
     "start": "electron .",
-    "release": "electron-builder --win --x64 --publish=never",
-    "release:mac": "electron-builder --mac --publish=never"
+    "release": "electron-builder --publish=never"
   },
   "build": {
     "appId": "io.github.taylorivanoff.cmd-deck",
@@ -47,6 +46,14 @@
     "publish": {
       "provider": "generic",
       "url": "https://github.com/taylorivanoff/cmd-deck/releases/latest/download"
+    },
+    "linux": {
+      "icon": "resources/icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
     }
   },
   "dependencies": {

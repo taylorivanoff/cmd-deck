@@ -20,6 +20,7 @@ const {
   closeTerminalWindow,
   closeAllTerminalWindows
 } = require('./terminal-window');
+const shells = require('./shells');
 const { createTray, updateTrayMenu, destroyTray, getIconPath } = require('./tray');
 
 const APP_NAME = 'CmdDeck';
@@ -62,28 +63,70 @@ function syncLoginItemArgs() {
   });
 }
 
-function getWindowBounds() {
-  const saved = store.getWindowBounds();
-  const defaults = { width: 380, height: 460 };
-  if (!saved) return defaults;
-  const displays = screen.getAllDisplays();
-  const inBounds = displays.some((d) => {
-    const { x, y, width, height } = d.bounds;
-    return saved.x >= x && saved.x < x + width && saved.y >= y && saved.y < y + height;
-  });
-  if (!inBounds) return defaults;
+const MIN_WIDTH = 140;
+const MIN_HEIGHT = 140;
+const DEFAULT_BOUNDS = { width: 380, height: 460 };
+let saveBoundsTimer = null;
+
+function normalizeBounds(raw) {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_BOUNDS };
   return {
-    x: saved.x,
-    y: saved.y,
-    width: Math.max(280, saved.width || defaults.width),
-    height: Math.max(320, saved.height || defaults.height)
+    x: Number.isFinite(raw.x) ? Math.round(raw.x) : undefined,
+    y: Number.isFinite(raw.y) ? Math.round(raw.y) : undefined,
+    width: Math.max(MIN_WIDTH, Math.round(raw.width || DEFAULT_BOUNDS.width)),
+    height: Math.max(MIN_HEIGHT, Math.round(raw.height || DEFAULT_BOUNDS.height))
   };
 }
 
-function saveWindowBounds() {
-  if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isMinimized() && !mainWindow.isMaximized()) {
-    store.setWindowBounds(mainWindow.getBounds());
+function boundsVisibleOnAnyDisplay(bounds) {
+  const displays = screen.getAllDisplays();
+  if (!displays.length) return true;
+  // Treat as visible if the window's center (or top-left) lands on a display.
+  const cx = (bounds.x ?? 0) + bounds.width / 2;
+  const cy = (bounds.y ?? 0) + bounds.height / 2;
+  return displays.some((d) => {
+    const { x, y, width, height } = d.bounds;
+    const onCenter = cx >= x && cx < x + width && cy >= y && cy < y + height;
+    const onOrigin = Number.isFinite(bounds.x)
+      && Number.isFinite(bounds.y)
+      && bounds.x < x + width
+      && bounds.x + bounds.width > x
+      && bounds.y < y + height
+      && bounds.y + bounds.height > y;
+    return onCenter || onOrigin;
+  });
+}
+
+function getWindowBounds() {
+  const saved = normalizeBounds(store.getWindowBounds());
+  if (!Number.isFinite(saved.x) || !Number.isFinite(saved.y)) {
+    return { width: saved.width, height: saved.height };
   }
+  if (!boundsVisibleOnAnyDisplay(saved)) {
+    return { width: saved.width, height: saved.height };
+  }
+  return saved;
+}
+
+function saveWindowBounds(immediate = false) {
+  const persist = () => {
+    saveBoundsTimer = null;
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (mainWindow.isMinimized()) return;
+    store.setWindowBounds(normalizeBounds(mainWindow.getBounds()));
+  };
+
+  if (immediate) {
+    if (saveBoundsTimer) {
+      clearTimeout(saveBoundsTimer);
+      saveBoundsTimer = null;
+    }
+    persist();
+    return;
+  }
+
+  if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
+  saveBoundsTimer = setTimeout(persist, 150);
 }
 
 function createSplash() {
@@ -114,7 +157,7 @@ function platformWindowOptions() {
   if (isMac) {
     return {
       titleBarStyle: 'hiddenInset',
-      trafficLightPosition: { x: 12, y: 12 },
+      trafficLightPosition: { x: 10, y: 7 },
       vibrancy: 'under-window',
       visualEffectState: 'active',
       backgroundColor: '#00000000'
@@ -127,6 +170,12 @@ function platformWindowOptions() {
   };
 }
 
+function applyWindowOpacity(value) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const opacity = Math.min(1, Math.max(0.35, Number(value) || 0.94));
+  mainWindow.setOpacity(opacity);
+}
+
 function createWindow() {
   if (mainWindow) return mainWindow;
 
@@ -134,14 +183,17 @@ function createWindow() {
   const settings = store.getSettings();
 
   mainWindow = new BrowserWindow({
-    ...bounds,
+    width: bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y,
     show: false,
     alwaysOnTop: settings.alwaysOnTop,
     minimizable: true,
     maximizable: false,
     fullscreenable: false,
-    minWidth: 280,
-    minHeight: 320,
+    minWidth: MIN_WIDTH,
+    minHeight: MIN_HEIGHT,
     icon: getIconPath(),
     ...platformWindowOptions(),
     webPreferences: {
@@ -152,11 +204,25 @@ function createWindow() {
     }
   });
 
+  // Electron can drop x/y when constructing with show:false — re-apply explicitly.
+  if (Number.isFinite(bounds.x) && Number.isFinite(bounds.y)) {
+    mainWindow.setBounds({
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height
+    }, false);
+  } else {
+    mainWindow.setSize(bounds.width, bounds.height, false);
+  }
+
   mainWindow.setMenu(null);
+  applyWindowOpacity(settings.opacity);
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 
   mainWindow.webContents.on('did-finish-load', () => {
     closeSplash();
+    applyWindowOpacity(store.getSettings().opacity);
     const startMinimised = process.argv.includes(START_MINIMIZED_ARG) || getStartMinimised();
     if (!startMinimised) {
       mainWindow.show();
@@ -164,14 +230,18 @@ function createWindow() {
     }
   });
 
-  mainWindow.on('resize', saveWindowBounds);
-  mainWindow.on('move', saveWindowBounds);
+  mainWindow.on('resize', () => saveWindowBounds(false));
+  mainWindow.on('move', () => saveWindowBounds(false));
+  mainWindow.on('resized', () => saveWindowBounds(true));
+  mainWindow.on('moved', () => saveWindowBounds(true));
   mainWindow.on('close', (event) => {
+    saveWindowBounds(true);
     if (!isQuitting) {
       event.preventDefault();
       mainWindow.hide();
     }
   });
+  mainWindow.on('hide', () => saveWindowBounds(true));
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -348,9 +418,16 @@ function registerIpc() {
     macros: decorateMacros(store.getMacros()),
     settings: store.getSettings(),
     runningIds: runner.getRunningIds(),
+    shells: shells.listShells().map(({ id, name, detail }) => ({ id, name, detail })),
+    defaultShell: shells.defaultShellId(),
     platform: process.platform,
     version: app.getVersion(),
     dark: nativeTheme.shouldUseDarkColors
+  }));
+
+  ipcMain.handle('shells:list', () => ({
+    shells: shells.listShells().map(({ id, name, detail }) => ({ id, name, detail })),
+    defaultShell: shells.defaultShellId()
   }));
 
   ipcMain.handle('macros:list', () => decorateMacros(store.getMacros()));
@@ -396,6 +473,8 @@ function registerIpc() {
       });
     }
 
+    // Always execute through the selected shell so PATH/env match that shell
+    // (e.g. php available in PowerShell but not cmd).
     const result = runner.runMacro(macro);
     if (result.ok && macro.showTerminal) {
       const running = runner.getRunning(id);
@@ -451,6 +530,7 @@ function registerIpc() {
     if (partial?.alwaysOnTop !== undefined && partial.alwaysOnTop !== prev.alwaysOnTop) {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setAlwaysOnTop(settings.alwaysOnTop);
     }
+    if (partial?.opacity !== undefined) applyWindowOpacity(settings.opacity);
     if (partial?.startMinimised !== undefined) syncLoginItemArgs();
     if (trayHandlers) updateTrayMenu(trayHandlers);
     sendToRenderer('settings:changed', settings);
@@ -530,6 +610,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  saveWindowBounds(true);
   closeAllTerminalWindows();
   closeSplash();
   destroyTray();

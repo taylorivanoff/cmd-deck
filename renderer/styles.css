@@ -6,7 +6,7 @@
   --bg-button-hover: #dedee0;
   --border: rgba(0, 0, 0, 0.08);
   --text: #1c1c1e;
-  --text-secondary: rgba(28, 28, 30, 0.62);
+  --text-secondary: rgba(28, 28, 30, 0.55);
   --accent: #0078d4;
   --accent-text: #ffffff;
   --danger: #c42b1c;
@@ -15,9 +15,11 @@
   --radius: 8px;
   --radius-btn: 10px;
   --font: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
-  --titlebar-h: 40px;
-  --pad-gap: 10px;
-  --control-h: 32px;
+  --titlebar-h: 28px;
+  --pad-gap: 4px;
+  --control-h: 30px;
+  --columns: 3;
+  --rows: 3;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -28,7 +30,7 @@
     --bg-button-hover: #48484a;
     --border: rgba(255, 255, 255, 0.1);
     --text: #f5f5f7;
-    --text-secondary: rgba(245, 245, 247, 0.62);
+    --text-secondary: rgba(245, 245, 247, 0.55);
     --accent: #4cc2ff;
     --accent-text: #00344d;
     --danger: #ff6961;
@@ -59,17 +61,17 @@ body.platform-darwin {
   --radius-btn: 14px;
   --accent: #0a84ff;
   --accent-text: #ffffff;
-  --titlebar-h: 52px;
+  --titlebar-h: 34px;
   background: transparent;
 }
 
 body.platform-darwin .app {
-  background: rgba(246, 246, 246, 0.72);
+  background: rgba(246, 246, 246, 0.55);
 }
 
 @media (prefers-color-scheme: dark) {
   body.platform-darwin .app {
-    background: rgba(28, 28, 30, 0.72);
+    background: rgba(28, 28, 30, 0.45);
   }
 }
 
@@ -81,14 +83,15 @@ body.platform-win32 {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 0 12px 12px;
+  padding: 2px 6px 6px;
+  gap: 2px;
 }
 
 .titlebar {
   height: var(--titlebar-h);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -102,71 +105,81 @@ body.platform-win32 {
 }
 
 body.platform-darwin .titlebar-drag {
-  padding-left: 68px;
+  padding-left: 58px;
 }
 
 .app-title {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
   color: var(--text-secondary);
+  opacity: 0.75;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 body.platform-darwin .app-title {
-  font-size: 13px;
-  font-weight: 590;
   width: 100%;
   text-align: center;
-  padding-right: 68px;
+  padding-right: 58px;
 }
 
 .titlebar-actions {
   display: flex;
-  gap: 6px;
+  gap: 2px;
   -webkit-app-region: no-drag;
 }
 
 .icon-btn {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
-  color: var(--text);
+  color: var(--text-secondary);
   display: grid;
   place-items: center;
   cursor: pointer;
 }
 
+.icon-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
 .icon-btn:hover {
   background: var(--bg-button);
+  color: var(--text);
 }
 
 .icon-btn.primary {
-  background: var(--accent);
-  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
 }
 
 .icon-btn.primary:hover {
-  filter: brightness(1.05);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .pad {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(var(--columns, 3), 1fr);
+  grid-template-columns: repeat(var(--columns, 3), minmax(0, 1fr));
+  grid-auto-rows: minmax(0, calc((100% - (var(--rows, 3) - 1) * var(--pad-gap)) / var(--rows, 3)));
   gap: var(--pad-gap);
-  align-content: start;
+  align-content: stretch;
   overflow: auto;
-  padding: 4px 2px 8px;
+  padding: 0;
+  container-type: size;
 }
 
 .macro-btn {
-  aspect-ratio: 1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-btn);
   background: var(--bg-button);
@@ -178,8 +191,8 @@ body.platform-darwin .app-title {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px;
+  gap: 2px;
+  padding: 4px;
   transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
 }
 
@@ -211,9 +224,9 @@ body.platform-darwin .app-title {
 .macro-btn .label {
   position: relative;
   z-index: 1;
-  font-size: 12px;
+  font-size: clamp(8px, 3.2cqi, 12px);
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.15;
   text-align: center;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -231,8 +244,8 @@ body.platform-darwin .app-title {
 .macro-btn .glyph {
   position: relative;
   z-index: 1;
-  font-size: 22px;
-  opacity: 0.55;
+  font-size: clamp(11px, 4.5cqi, 18px);
+  opacity: 0.45;
   font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, monospace;
 }
 
@@ -250,10 +263,10 @@ body.platform-darwin .app-title {
 
 .macro-btn .spinner {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 12px;
-  height: 12px;
+  top: 4px;
+  right: 4px;
+  width: 10px;
+  height: 10px;
   border: 2px solid rgba(255, 255, 255, 0.25);
   border-top-color: var(--accent);
   border-radius: 50%;
@@ -267,30 +280,42 @@ body:not(.dark) .macro-btn:not(.has-image) .spinner {
 }
 
 .add-tile {
-  aspect-ratio: 1;
-  border: 1.5px dashed var(--border);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: 1.5px dashed color-mix(in srgb, var(--border) 80%, transparent);
   border-radius: var(--radius-btn);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
   display: grid;
   place-items: center;
-  font-size: 28px;
+  font-size: clamp(14px, 5cqi, 22px);
   font-weight: 300;
-  transition: background 120ms ease, color 120ms ease;
+  opacity: 0.7;
+  transition: background 120ms ease, color 120ms ease, opacity 120ms ease;
 }
 
 .add-tile:hover {
   background: var(--bg-button);
   color: var(--text);
+  opacity: 1;
 }
 
 .hint {
   flex-shrink: 0;
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-secondary);
-  padding-top: 4px;
+  opacity: 0.7;
+  line-height: 1;
+  padding: 1px 0 0;
+}
+
+.hint:empty,
+.hint.is-hidden {
+  display: none;
 }
 
 .overlay {
@@ -414,7 +439,8 @@ body.platform-darwin .sheet {
 }
 
 .field input[type="text"],
-.field textarea {
+.field textarea,
+.field select {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -429,11 +455,25 @@ body.platform-darwin .sheet {
   -webkit-user-select: text;
 }
 
+.field select {
+  resize: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .field input[type="text"]:focus,
-.field textarea:focus {
+.field textarea:focus,
+.field select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
 }
+
+.field-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
 
 .field input[type="range"] {
   width: 100%;
@@ -562,17 +602,17 @@ body.platform-darwin .sheet {
 
 .macro-btn .badge-terminal {
   position: absolute;
-  top: 7px;
-  left: 7px;
+  top: 4px;
+  left: 4px;
   z-index: 2;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 4px;
   display: grid;
   place-items: center;
   background: rgba(0, 0, 0, 0.45);
   color: #fff;
-  font-size: 10px;
+  font-size: 9px;
   font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, monospace;
   line-height: 1;
 }

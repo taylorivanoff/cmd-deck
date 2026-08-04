@@ -6,7 +6,7 @@ const windows = new Map();
 
 function titleFor(macroMeta) {
   const label = (macroMeta?.name || '').trim() || (macroMeta?.command || '').trim().split(/\r?\n/)[0] || 'Command';
-  return `CmdDeck — ${label}`;
+  return `CmdDeck - ${label}`;
 }
 
 function createTerminalWindow(macroMeta, iconPath, options = {}) {
