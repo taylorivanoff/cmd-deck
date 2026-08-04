@@ -38,6 +38,7 @@ const {
 const logger = require('./logger');
 const shells = require('./shells');
 const { createTray, updateTrayMenu, destroyTray, getIconPath } = require('./tray');
+const { attachResizeLogging } = require('./window-debug');
 
 const APP_NAME = 'CmdDeck';
 const START_MINIMIZED_ARG = '--start-minimised';
@@ -92,7 +93,7 @@ function syncLoginItemArgs() {
   });
 }
 
-const MIN_WIDTH = 140;
+const MIN_WIDTH = 335;
 const MIN_HEIGHT = 140;
 const DEFAULT_BOUNDS = { width: 380, height: 460 };
 let saveBoundsTimer = null;
@@ -110,7 +111,6 @@ function normalizeBounds(raw) {
 function boundsVisibleOnAnyDisplay(bounds) {
   const displays = screen.getAllDisplays();
   if (!displays.length) return true;
-  // Treat as visible if the window's center (or top-left) lands on a display.
   const cx = (bounds.x ?? 0) + bounds.width / 2;
   const cy = (bounds.y ?? 0) + bounds.height / 2;
   return displays.some((d) => {
@@ -160,9 +160,6 @@ function saveWindowBounds(immediate = false) {
 
 function createSplash() {
   const splashPath = path.join(app.getAppPath(), 'resources', 'splash.html');
-  // Opaque window (not transparent): on Windows, mainWindow.setOpacity can
-  // bleed into other transparent BrowserWindows in the same process.
-  // show:false until ready-to-show so we never flash an empty solid frame.
   splashWindow = new BrowserWindow({
     width: 280,
     height: 320,
@@ -178,12 +175,26 @@ function createSplash() {
     webPreferences: { nodeIntegration: false }
   });
   splashWindow.setMenu(null);
-  splashWindow.once('ready-to-show', () => {
+  attachResizeLogging(splashWindow, 'Splash window');
+  const showSplash = () => {
     if (!splashWindow || splashWindow.isDestroyed()) return;
     splashWindow.center();
     splashWindow.show();
+  };
+  splashWindow.webContents.once('did-finish-load', showSplash);
+  splashWindow.webContents.once('did-fail-load', (_event, errorCode, errorDescription) => {
+    console.warn(`CmdDeck splash failed to load (${errorCode}): ${errorDescription}`);
+    showSplash();
   });
-  splashWindow.loadFile(splashPath);
+  if (!app.isPackaged) {
+    splashWindow.webContents.on('console-message', (_event, details) => {
+      console.log(`[CmdDeck] Splash console (${details.level}) ${details.sourceId}:${details.lineNumber}: ${details.message}`);
+    });
+  }
+  splashWindow.loadFile(splashPath).catch((err) => {
+    console.warn(`CmdDeck splash load error: ${err?.message || err}`);
+    showSplash();
+  });
 }
 
 function closeSplash() {
@@ -213,8 +224,6 @@ function platformWindowOptions() {
 
 function applyWindowOpacity(value) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  // Never apply pad transparency while the splash is up — Windows can
-  // composite that opacity onto sibling windows.
   if (splashWindow && !splashWindow.isDestroyed()) return;
   const opacity = Math.min(1, Math.max(0.35, Number(value) || 0.94));
   mainWindow.setOpacity(opacity);
@@ -249,7 +258,6 @@ function createWindow() {
     }
   });
 
-  // Electron can drop x/y when constructing with show:false - re-apply explicitly.
   if (Number.isFinite(bounds.x) && Number.isFinite(bounds.y)) {
     mainWindow.setBounds({
       x: bounds.x,
@@ -262,8 +270,7 @@ function createWindow() {
   }
 
   mainWindow.setMenu(null);
-  // Do not call setOpacity while splash is open — on Windows that can blank
-  // sibling BrowserWindows. Default opacity is already 1 until splash closes.
+  attachResizeLogging(mainWindow, 'Main window');
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 
   mainWindow.webContents.on('did-finish-load', () => {
@@ -488,7 +495,6 @@ function queueMacroRun(id) {
   }
 
   pendingStarts.add(id);
-  // Optimistic UI feedback before PATH/shell work finishes.
   const pendingStatus = {
     id,
     status: 'running',
@@ -835,7 +841,6 @@ app.whenReady().then(() => {
   registerIpc();
   createWindow();
 
-  // Warm PATH/shell detection off the click path.
   setImmediate(() => {
     try {
       shells.warmRuntime();
@@ -897,7 +902,6 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  // Stay alive in the tray unless the user chose Quit.
   if (isQuitting) app.quit();
 });
 

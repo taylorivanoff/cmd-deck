@@ -1,5 +1,6 @@
 const { BrowserWindow, screen } = require('electron');
 const path = require('path');
+const { attachResizeLogging } = require('./window-debug');
 
 /** @type {BrowserWindow | null} */
 let editorWindow = null;
@@ -57,6 +58,7 @@ function createAuxWindow({ width, height, minWidth, minHeight, title, html, quer
   });
 
   win.setMenu(null);
+  attachResizeLogging(win, title);
   win.setOpacity(1);
   win.loadFile(path.join(__dirname, '..', 'renderer', html), { query: query || {} });
 

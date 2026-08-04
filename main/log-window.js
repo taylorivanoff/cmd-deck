@@ -1,5 +1,6 @@
 const { BrowserWindow, screen } = require('electron');
 const path = require('path');
+const { attachResizeLogging } = require('./window-debug');
 
 /** @type {BrowserWindow | null} */
 let logWindow = null;
@@ -53,6 +54,7 @@ function openLogWindow({ iconPath, parent, alwaysOnTop = false } = {}) {
   });
 
   logWindow.setMenu(null);
+  attachResizeLogging(logWindow, 'Activity log window');
   logWindow.setOpacity(1);
   logWindow.loadFile(path.join(__dirname, '..', 'renderer', 'log.html'));
 

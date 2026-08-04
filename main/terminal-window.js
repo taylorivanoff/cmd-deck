@@ -1,5 +1,6 @@
 const { BrowserWindow, screen } = require('electron');
 const path = require('path');
+const { attachResizeLogging } = require('./window-debug');
 
 /** @type {Map<string, BrowserWindow>} */
 const windows = new Map();
@@ -42,6 +43,7 @@ function createTerminalWindow(macroMeta, iconPath, options = {}) {
   });
 
   win.setMenu(null);
+  attachResizeLogging(win, 'Terminal window');
   win.loadFile(path.join(__dirname, '..', 'renderer', 'terminal.html'), {
     query: { id }
   });
