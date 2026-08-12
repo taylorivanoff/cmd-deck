@@ -1,6 +1,13 @@
 const { app } = require('electron');
 const path = require('path');
-const { run } = require('electron-tray-base');
+const loadElectronTrayBase = require('./load-electron-tray-base');
+const { configureAppIsolation, run } = loadElectronTrayBase();
+
+configureAppIsolation({
+  appId: 'io.github.taylorivanoff.cmd-deck',
+  appName: 'CmdDeck'
+});
+
 const store = require('./store');
 const { attachResizeLogging } = require('./window-debug');
 const {

@@ -128,6 +128,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
       - uses: oven-sh/setup-bun@v2
       - run: bun install
+      - run: bun update electron-tray-base
 
       - name: Configure Windows code signing
         if: runner.os == 'Windows'
