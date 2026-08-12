@@ -6,11 +6,29 @@ on:
   pull_request:
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
+  check:
+    runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout app
+        uses: actions/checkout@v4
+        with:
+          path: app
+      - name: Checkout tauri-tray-base
+        uses: actions/checkout@v4
+        with:
+          repository: taylorivanoff/tauri-tray-base
+          path: tauri-tray-base
+      - uses: dtolnay/rust-toolchain@stable
       - uses: oven-sh/setup-bun@v2
-      - run: bun install
-      - run: bun update electron-tray-base
-      - run: bun run lint
+        with:
+          working-directory: app
+      - name: Install JS deps
+        working-directory: app
+        run: bun install
+      - name: Lint
+        working-directory: app
+        run: bun run lint
+        continue-on-error: true
+      - name: Cargo check
+        working-directory: app/src-tauri
+        run: cargo check

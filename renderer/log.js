@@ -52,10 +52,10 @@
     renderEmpty();
   });
 
-  document.getElementById('btn-close').addEventListener('click', () => window.close());
+  document.getElementById('btn-close').addEventListener('click', () => window.cmdDeckLog.closeWindow());
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') window.close();
+    if (event.key === 'Escape') window.cmdDeckLog.closeWindow();
   });
 
   init().catch((err) => console.error(err));

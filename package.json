@@ -6,68 +6,22 @@
   },
   "version": "1.0.13",
   "repository": "https://github.com/taylorivanoff/cmd-deck",
-  "main": "main/main.js",
+  "license": "MIT",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron .",
+    "dev": "node scripts/run-tauri.cjs dev",
+    "start": "node scripts/run-tauri.cjs dev",
+    "build": "node scripts/run-tauri.cjs build",
+    "tauri": "node scripts/run-tauri.cjs",
+    "release": "node scripts/run-tauri.cjs build",
     "bump": "node scripts/bump-version.js",
-    "release": "node scripts/minify-release.cjs && electron-builder --project .release-staging --publish=never",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "minify:release": "node scripts/minify-release.cjs"
-  },
-  "build": {
-    "appId": "io.github.taylorivanoff.cmd-deck",
-    "productName": "CmdDeck",
-    "files": [
-      "main/**/*",
-      "preload/**/*",
-      "renderer/**/*",
-      "resources/**/*",
-      "package.json"
-    ],
-    "directories": {
-      "output": "dist"
-    },
-    "win": {
-      "icon": "resources/icon.png",
-      "target": "nsis",
-      "artifactName": "${name}-Setup-${version}.${ext}"
-    },
-    "afterPack": "./scripts/after-pack.js",
-    "mac": {
-      "icon": "resources/icon.png",
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "category": "public.app-category.utilities",
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false
-    },
-    "nsis": {
-      "oneClick": true,
-      "include": "installer.nsh",
-      "deleteAppDataOnUninstall": true
-    },
-    "publish": {
-      "provider": "generic",
-      "url": "https://standupmate.com/updates/cmd-deck"
-    },
-    "compression": "maximum"
-  },
-  "dependencies": {
-    "electron-store": "^8.2.0",
-    "electron-tray-base": "github:taylorivanoff/electron-tray-base",
-    "electron-updater": "^6.8.9"
+    "icon": "node scripts/run-tauri.cjs icon resources/icon.png",
+    "lint": "eslint renderer",
+    "lint:fix": "eslint renderer --fix"
   },
   "devDependencies": {
-    "electron": "^43.2.0",
-    "electron-builder": "^26.15.3",
-    "electron-reloader": "^1.2.3",
+    "@tauri-apps/cli": "^2",
     "eslint": "^9.39.5",
     "@eslint/js": "^9.39.5",
-    "globals": "^16.0.0",
-    "esbuild": "^0.25.0"
+    "globals": "^16.0.0"
   }
 }

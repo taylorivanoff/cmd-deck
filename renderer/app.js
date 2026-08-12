@@ -7,7 +7,7 @@
   const settingRows = document.getElementById('setting-rows');
 
   let macros = [];
-  let settings = { columns: 3, rows: 3, opacity: 0.94, alwaysOnTop: true, startMinimised: false, sizeLocked: true };
+  let settings = { columns: 3, rows: 1, opacity: 0.94, alwaysOnTop: true, startMinimised: false, sizeLocked: false };
   const btnLock = document.getElementById('btn-lock');
   let running = new Set();
   let flash = new Map();
@@ -39,11 +39,11 @@
 
   function applyLayout() {
     pad.style.setProperty('--columns', String(settings.columns || 3));
-    pad.style.setProperty('--rows', String(settings.rows || 3));
+    pad.style.setProperty('--rows', String(settings.rows || 1));
   }
 
   function syncLockButton() {
-    const locked = settings.sizeLocked !== false;
+    const locked = settings.sizeLocked === true;
     btnLock.classList.toggle('is-on', locked);
     btnLock.setAttribute('aria-pressed', locked ? 'true' : 'false');
     btnLock.title = locked ? 'Unlock size' : 'Lock size';
@@ -52,7 +52,7 @@
 
   function syncGridInputs() {
     const cols = settings.columns || 3;
-    const rows = settings.rows || 3;
+    const rows = settings.rows || 1;
     if (document.activeElement !== settingColumns) settingColumns.value = String(cols);
     if (document.activeElement !== settingRows) settingRows.value = String(rows);
 
@@ -75,7 +75,8 @@
   }
 
   async function commitGridSetting(key, input, min, max) {
-    const next = clampInt(input.value, min, max, settings[key] || 3);
+    const fallback = key === 'rows' ? 1 : 3;
+    const next = clampInt(input.value, min, max, settings[key] || fallback);
     input.value = String(next);
     if (settings[key] === next) {
       syncGridInputs();
@@ -88,7 +89,8 @@
   }
 
   async function nudgeGridSetting(key, delta, min, max) {
-    const current = settings[key] || 3;
+    const fallback = key === 'rows' ? 1 : 3;
+    const current = settings[key] || fallback;
     const next = Math.min(max, Math.max(min, current + delta));
     if (next === current) return;
     settings = { ...settings, [key]: next };

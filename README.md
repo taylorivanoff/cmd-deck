@@ -36,13 +36,13 @@ Ideal for developers or power users who want a lightweight **desktop command pal
 
 ```bash
 bun install
-bun run start
+bun run dev
 ```
 
 ### Building
 
 ```bash
-bun run release
+bun run build
 ```
 
 ### Releasing
@@ -231,11 +231,11 @@ echo "Old Downloads cleaned."
 - Detects installed shells from PATH / OS locations (`powershell`, `pwsh`, `cmd`, Git Bash, WSL, zsh, bash, fish, Nushell, and `/etc/shells` entries)
 - Defaults to PowerShell 7/Windows PowerShell on Windows, or `$SHELL` / zsh / bash on macOS/Linux
 - Commands run with a rebuilt login-like PATH (OS env + common tool bins) so GUI/IDE launches still find Herd, Scoop, Homebrew, nvm, etc.
-- Button images are copied into app user data so they stay available after you move the originals
+- Button images are embedded directly into the saved macro, so they stay available after you move or delete the originals
 
 ## Keywords
 
-Stream Deck alternative, command launcher, terminal shortcuts, macro pad, always-on-top command grid, Electron desktop app, Windows Terminal launcher, shell command buttons
+Stream Deck alternative, command launcher, terminal shortcuts, macro pad, always-on-top command grid, Tauri desktop app, Windows Terminal launcher, shell command buttons
 
 ## Contributing
 

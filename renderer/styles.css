@@ -19,7 +19,7 @@
   --pad-gap: 4px;
   --control-h: 30px;
   --columns: 3;
-  --rows: 3;
+  --rows: 1;
 }
 
 @media (prefers-color-scheme: dark) {

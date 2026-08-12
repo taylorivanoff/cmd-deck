@@ -23,8 +23,6 @@ jobs:
       - id: check
         run: |
           set -e
-          # Only source and package files should bump version or cut a release.
-          # Docs, README, CI config, licenses, etc. are ignored.
           if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
             CHANGED=$(git diff --name-only HEAD^ HEAD)
           else
@@ -33,10 +31,13 @@ jobs:
 
           is_release_relevant() {
             case "$1" in
-              package.json|package-lock.json|bun.lock|bun.lockb|yarn.lock|pnpm-lock.yaml)
+              package.json|src-tauri/tauri.conf.json|src-tauri/Cargo.toml|Cargo.lock)
                 return 0
                 ;;
-              *.js|*.mjs|*.cjs|*.ts|*.tsx)
+              *.js|*.mjs|*.cjs|*.rs|*.html|*.css)
+                return 0
+                ;;
+              src-tauri/*|renderer/*|sidecar/*)
                 return 0
                 ;;
             esac
@@ -53,7 +54,6 @@ jobs:
           done <<< "$CHANGED"
 
           if [ "$SHOULD_RELEASE" != true ]; then
-            echo "Only docs/metadata changed; skipping version bump and release"
             echo "should_release=false" >> "$GITHUB_OUTPUT"
             echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
             echo "ref=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -70,17 +70,19 @@ jobs:
           if [ -n "$OLD" ] && [ "$OLD" = "$CURRENT" ]; then
             npm version patch --no-git-tag-version
             CURRENT=$(jq -r .version package.json)
+            # Keep tauri.conf.json in sync
+            if [ -f src-tauri/tauri.conf.json ]; then
+              jq --arg v "$CURRENT" '.version = $v' src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp
+              mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
+            fi
+            if [ -f src-tauri/Cargo.toml ]; then
+              sed -i "s/^version = \".*\"/version = \"$CURRENT\"/" src-tauri/Cargo.toml
+            fi
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package.json
-            for lock in package-lock.json bun.lock bun.lockb yarn.lock; do
-              if [ -f "$lock" ]; then git add "$lock"; fi
-            done
+            git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml || true
             git commit -m "chore: bump version to ${CURRENT}"
             git push
-            echo "Auto-bumped version to ${CURRENT}"
-          else
-            echo "Using version ${CURRENT} (already bumped or initial)"
           fi
 
           echo "should_release=true" >> "$GITHUB_OUTPUT"
@@ -94,64 +96,35 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
-            args: --win --x64
-            artifacts: |
-              dist/*.exe
-              dist/latest.yml
-              dist/*.blockmap
-          - os: macos-latest
-            args: --mac
-            artifacts: |
-              dist/*.dmg
-              dist/*.zip
-              dist/latest-mac.yml
-              dist/*.blockmap
-    runs-on: ${{ matrix.os }}
+          - platform: windows-latest
+            args: --bundles nsis
+          - platform: macos-latest
+            args: --bundles dmg
+    runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout app
+        uses: actions/checkout@v4
         with:
           ref: ${{ needs.check-version.outputs.ref }}
-          fetch-depth: 0
-      - name: Generate changelog
-        id: changelog
-        shell: bash
-        run: |
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -z "$LAST_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"- %s" -10)
-          else
-            COMMITS=$(git log --pretty=format:"- %s" ${LAST_TAG}..HEAD)
-          fi
-          echo "commits<<EOF" >> $GITHUB_OUTPUT
-          echo "$COMMITS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install
-      - run: bun update electron-tray-base
-
-      - name: Configure Windows code signing
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          _WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          _WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: |
-          if (-not [string]::IsNullOrEmpty($env:_WIN_CSC_LINK)) {
-            "WIN_CSC_LINK=$($env:_WIN_CSC_LINK)" | Out-File -FilePath $env:GITHUB_ENV -Append
-            "WIN_CSC_KEY_PASSWORD=$($env:_WIN_CSC_KEY_PASSWORD)" | Out-File -FilePath $env:GITHUB_ENV -Append
-            Write-Host "Windows code signing enabled."
-          } else {
-            Write-Host "No WIN_CSC_LINK secret - building unsigned."
-          }
-      - run: bun run release -- ${{ matrix.args }}
-      - uses: softprops/action-gh-release@v2
+          path: app
+      - name: Checkout tauri-tray-base
+        uses: actions/checkout@v4
         with:
-          tag_name: v${{ needs.check-version.outputs.version }}
-          files: ${{ matrix.artifacts }}
-          body: |
-            ## What's Changed
-            ${{ steps.changelog.outputs.commits }}
+          repository: taylorivanoff/tauri-tray-base
+          path: tauri-tray-base
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: oven-sh/setup-bun@v2
+      - name: Install frontend deps
+        working-directory: app
+        run: bun install
+      - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+        with:
+          projectPath: app
+          tagName: v__VERSION__
+          releaseName: CmdDeck v__VERSION__
+          releaseBody: "See the assets below to download and install."
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}

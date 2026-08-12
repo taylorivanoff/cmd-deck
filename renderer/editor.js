@@ -161,7 +161,7 @@
   }
 
   function closeWindow() {
-    window.close();
+    window.cmdDeck.closeWindow();
   }
 
   function lineCount(text) {

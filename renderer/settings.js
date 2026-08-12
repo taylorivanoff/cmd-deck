@@ -52,7 +52,7 @@
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') window.close();
+    if (event.key === 'Escape') window.cmdDeck.closeWindow();
   });
 
   init().catch((err) => console.error(err));

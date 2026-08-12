@@ -4,3 +4,5 @@ dist/
 .DS_Store
 Thumbs.db
 .release-staging/
+src-tauri/target/
+src-tauri/gen/

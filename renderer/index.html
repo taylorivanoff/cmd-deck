@@ -33,7 +33,7 @@
           <span class="grid-sep" aria-hidden="true">×</span>
           <div class="grid-stepper" data-key="rows" data-min="1" data-max="32">
             <span class="grid-label">Rows</span>
-            <input type="text" class="grid-value" id="setting-rows" inputmode="numeric" maxlength="2" aria-label="Rows" value="3" />
+            <input type="text" class="grid-value" id="setting-rows" inputmode="numeric" maxlength="2" aria-label="Rows" value="1" />
             <div class="grid-arrows">
               <button type="button" class="grid-arrow" data-dir="1" aria-label="Increase rows" title="Increase">
                 <svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path fill="currentColor" d="M6 1.2 10.8 6H1.2z"/></svg>
@@ -77,6 +77,8 @@
 
   <div class="ctx-menu hidden" id="ctx-menu" role="menu"></div>
 
+  <script src="vendor/tauri-tray-bridge.js"></script>
+  <script src="bridge/preload-bridge.js"></script>
   <script src="app.js"></script>
 </body>
 
