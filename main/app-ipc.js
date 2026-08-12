@@ -23,14 +23,15 @@ const {
   openEditorWindow,
   openSettingsWindow,
   getSettingsWindow,
-  setDialogWindowsAlwaysOnTop,
+  setDialogWindowsAlwaysOnTop
+} = require('./dialog-windows');
+const {
+  sendToLogWindow,
   setLogWindowAlwaysOnTop,
   openLogWindow
-} = require('./dialog-windows');
-const { sendToLogWindow } = require('./log-window');
+} = require('./log-window');
 const logger = require('./logger');
 const shells = require('./shells');
-const license = require('standupmate-license');
 
 const APP_NAME = 'CmdDeck';
 const pendingStarts = new Set();
@@ -472,10 +473,6 @@ function registerAppIpc() {
     });
     return { ok: true };
   });
-  ipcMain.handle('ui:openLicense', () => {
-    license.openLicenseDialog(ctx.getMainWindow());
-    return { ok: true };
-  });
   ipcMain.handle('log:get', () => logger.getLogs());
   ipcMain.handle('log:clear', () => {
     logger.clearLogs();
@@ -534,7 +531,6 @@ module.exports = {
   attachRunnerListeners,
   attachLoggerListener,
   reloadPath,
-  license,
   shells,
   logger,
   setDialogWindowsAlwaysOnTop,

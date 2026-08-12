@@ -1,14 +1,13 @@
 const { app } = require('electron');
 const path = require('path');
 const { run } = require('electron-tray-base');
-const license = require('standupmate-license');
 const store = require('./store');
 const { attachResizeLogging } = require('./window-debug');
 const {
   closeDialogWindows,
-  closeLogWindow,
   warmEditorWindow
 } = require('./dialog-windows');
+const { closeLogWindow } = require('./log-window');
 const { closeAllTerminalWindows } = require('./terminal-window');
 const {
   APP_NAME,
@@ -41,16 +40,8 @@ run({
     maximizable: false,
     fullscreenable: false
   },
-  updater: {
-    configureFeed: (autoUpdater) => license.configureUpdaterFeed(autoUpdater)
-  },
   tray: {
-    extraSections: () => {
-      const licenseItems = license.getTrayMenuItems();
-      const sections = [[{ label: 'Reload PATH', click: () => reloadPath() }]];
-      if (licenseItems.length) sections.push(licenseItems);
-      return sections;
-    }
+    extraSections: () => [[{ label: 'Reload PATH', click: () => reloadPath() }]]
   },
   dev: { entryModule: module },
   hooks: {
@@ -75,12 +66,6 @@ run({
         iconPath
       });
 
-      license.init({
-        productSlug: 'cmd-deck',
-        appVersion: app.getVersion(),
-        parentWindow: () => ctx.getMainWindow()
-      });
-
       registerAppIpc();
     },
     onReady: (ctx) => {
@@ -88,7 +73,6 @@ run({
       attachLoggerListener();
       logger.addLog('info', `${APP_NAME} ready`);
 
-      license.on('change', () => ctx.updateTrayMenu());
       ctx.updateTrayMenu();
 
       setImmediate(() => {
@@ -108,7 +92,6 @@ run({
       closeDialogWindows();
       closeLogWindow();
       closeAllTerminalWindows();
-      license.closeLicenseDialog();
     },
   }
 });

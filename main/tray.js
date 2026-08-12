@@ -27,9 +27,6 @@ function createTray(iconPath, handlers) {
 function updateTrayMenu(handlers) {
   if (!tray || tray.isDestroyed()) return;
   const settings = handlers.getSettings();
-  const licenseItems = typeof handlers.getLicenseMenuItems === 'function'
-    ? handlers.getLicenseMenuItems()
-    : [];
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Show CmdDeck', click: () => handlers.showWindow() },
     { label: 'Hide CmdDeck', click: () => handlers.hideWindow() },
@@ -50,9 +47,6 @@ function updateTrayMenu(handlers) {
     { label: 'Reload PATH', click: () => handlers.reloadPath() },
     { label: 'Check for Updates', click: () => handlers.checkForUpdates() },
     { label: `Version ${app.getVersion()}`, enabled: false },
-    ...(licenseItems.length
-      ? [{ type: 'separator' }, ...licenseItems]
-      : []),
     { type: 'separator' },
     { label: 'Quit', click: () => handlers.quit() }
   ]));

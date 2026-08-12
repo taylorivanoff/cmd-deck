@@ -17,7 +17,6 @@ contextBridge.exposeInMainWorld('cmdDeck', {
   openEditor: (id) => ipcRenderer.invoke('ui:openEditor', id || null),
   openSettings: () => ipcRenderer.invoke('ui:openSettings'),
   openLog: () => ipcRenderer.invoke('ui:openLog'),
-  openLicense: () => ipcRenderer.invoke('ui:openLicense'),
   showMacroMenu: (id) => ipcRenderer.invoke('ui:macroContextMenu', id),
   listShells: () => ipcRenderer.invoke('shells:list'),
   showItemInFolder: (filePath) => ipcRenderer.invoke('shell:showItem', filePath),
