@@ -1,4 +1,8 @@
-use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent};
+use tauri::utils::config::Color;
+use tauri::webview::{PageLoadEvent, PageLoadPayload};
+use tauri::{
+    AppHandle, Emitter, Manager, Theme, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent,
+};
 
 use crate::state::AppState;
 
@@ -14,6 +18,28 @@ fn current_always_on_top(app: &AppHandle) -> bool {
     app.try_state::<tauri_tray_base::TrayBaseState>()
         .map(|s| s.settings.lock().always_on_top)
         .unwrap_or(false)
+}
+
+fn dialog_background(app: &AppHandle) -> Color {
+    let dark = app
+        .get_webview_window(tauri_tray_base::MAIN_WINDOW_LABEL)
+        .and_then(|w| w.theme().ok())
+        .map(|t| t == Theme::Dark)
+        .unwrap_or(false);
+    // Match renderer/styles.css --bg (terminal uses its own dark #0c0c0c)
+    if dark {
+        Color(0x1c, 0x1c, 0x1e, 255)
+    } else {
+        Color(0xf3, 0xf3, 0xf3, 255)
+    }
+}
+
+fn terminal_background() -> Color {
+    Color(0x0c, 0x0c, 0x0c, 255)
+}
+
+fn log_background() -> Color {
+    Color(0x12, 0x12, 0x14, 255)
 }
 
 fn bring_to_front(win: &WebviewWindow) {
@@ -45,6 +71,24 @@ fn spawn_window(app: AppHandle, build: impl FnOnce(&AppHandle) + Send + 'static)
         .spawn(move || build(&app));
 }
 
+/// Show only after first paint so the native white frame never flashes.
+fn reveal_when_ready(pinned: bool) -> impl Fn(WebviewWindow, PageLoadPayload<'_>) + Send + Sync + 'static {
+    move |win, payload| {
+        if payload.event() != PageLoadEvent::Finished {
+            return;
+        }
+        if pinned {
+            if let Some(state) = win.app_handle().try_state::<tauri_tray_base::TrayBaseState>() {
+                let aot = state.settings.lock().always_on_top;
+                let _ = win.set_always_on_top(aot);
+            }
+        }
+        let _ = win.show();
+        let _ = win.unminimize();
+        let _ = win.set_focus();
+    }
+}
+
 pub fn open_editor_window(app: &AppHandle, macro_id: Option<String>) {
     if let Some(win) = app.get_webview_window(EDITOR_LABEL) {
         let _ = app.emit_to(EDITOR_LABEL, "editor:open", macro_id.clone());
@@ -59,6 +103,7 @@ pub fn open_editor_window(app: &AppHandle, macro_id: Option<String>) {
     };
     let title = editor_title(macro_id.is_some());
     let aot = current_always_on_top(app);
+    let bg = dialog_background(app);
 
     spawn_window(app.clone(), move |app| {
         let _ = WebviewWindowBuilder::new(app, EDITOR_LABEL, WebviewUrl::App(url.into()))
@@ -69,7 +114,9 @@ pub fn open_editor_window(app: &AppHandle, macro_id: Option<String>) {
             .minimizable(false)
             .maximizable(false)
             .always_on_top(aot)
-            .visible(true)
+            .background_color(bg)
+            .visible(false)
+            .on_page_load(reveal_when_ready(true))
             .center()
             .build();
     });
@@ -82,6 +129,7 @@ pub fn open_settings_window(app: &AppHandle) {
     }
 
     let aot = current_always_on_top(app);
+    let bg = dialog_background(app);
     spawn_window(app.clone(), move |app| {
         let _ = WebviewWindowBuilder::new(app, SETTINGS_LABEL, WebviewUrl::App("settings.html".into()))
             .title("Settings")
@@ -91,7 +139,9 @@ pub fn open_settings_window(app: &AppHandle) {
             .minimizable(false)
             .maximizable(false)
             .always_on_top(aot)
-            .visible(true)
+            .background_color(bg)
+            .visible(false)
+            .on_page_load(reveal_when_ready(true))
             .center()
             .build();
     });
@@ -104,6 +154,7 @@ pub fn open_log_window(app: &AppHandle) {
     }
 
     let aot = current_always_on_top(app);
+    let bg = log_background();
     spawn_window(app.clone(), move |app| {
         let _ = WebviewWindowBuilder::new(app, LOG_LABEL, WebviewUrl::App("log.html".into()))
             .title("CmdDeck Activity Log")
@@ -111,7 +162,9 @@ pub fn open_log_window(app: &AppHandle) {
             .min_inner_size(420.0, 280.0)
             .resizable(true)
             .always_on_top(aot)
-            .visible(true)
+            .background_color(bg)
+            .visible(false)
+            .on_page_load(reveal_when_ready(true))
             .center()
             .build();
     });
@@ -162,6 +215,7 @@ pub fn open_terminal_window(app: &AppHandle, id: &str, name: &str, command: &str
     let id_owned = id.to_string();
     let title = terminal_title(name, command);
     let label_owned = label.clone();
+    let bg = terminal_background();
 
     spawn_window(app.clone(), move |app| {
         let app_for_close = app.clone();
@@ -169,7 +223,9 @@ pub fn open_terminal_window(app: &AppHandle, id: &str, name: &str, command: &str
             .title(title)
             .inner_size(width, height)
             .min_inner_size(420.0, 280.0)
-            .visible(true)
+            .background_color(bg)
+            .visible(false)
+            .on_page_load(reveal_when_ready(false))
             .center()
             .build()
         {

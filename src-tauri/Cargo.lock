@@ -478,7 +478,7 @@ dependencies = [
 
 [[package]]
 name = "cmd-deck"
-version = "1.0.13"
+version = "1.0.15"
 dependencies = [
  "base64 0.22.1",
  "chrono",

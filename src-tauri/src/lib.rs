@@ -12,8 +12,8 @@ use std::collections::HashMap;
 use serde_json::json;
 use tauri::{Listener, Manager};
 use tauri_tray_base::{
-    apply_window_settings, install_state, setup_tray, sync_autostart, was_launched_minimised,
-    TrayBaseOptions, TrayExtraItem, TraySetupOptions,
+    apply_window_settings, install_state, setup_tray, sync_autostart, TrayBaseOptions,
+    TrayExtraItem, TraySetupOptions,
 };
 
 use state::AppState;
@@ -119,10 +119,6 @@ pub fn run() {
             }
 
             logger::add_log(app.handle(), "info", &format!("{APP_NAME} ready"), None);
-
-            if was_launched_minimised() {
-                tauri_tray_base::hide_main(app.handle());
-            }
 
             Ok(())
         })
