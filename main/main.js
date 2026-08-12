@@ -39,10 +39,21 @@ const logger = require('./logger');
 const shells = require('./shells');
 const { createTray, updateTrayMenu, destroyTray, getIconPath } = require('./tray');
 const { attachResizeLogging } = require('./window-debug');
+const license = require('standupmate-license');
 
 const APP_NAME = 'CmdDeck';
 const START_MINIMIZED_ARG = '--start-minimised';
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+function hasStartMinimisedArg(argv = process.argv) {
+  return argv.some(
+    (arg) => arg === START_MINIMIZED_ARG || arg.startsWith(`${START_MINIMIZED_ARG}=`)
+  );
+}
+
+function wasLaunchedMinimised(argv = process.argv) {
+  return hasStartMinimisedArg(argv);
+}
 
 let mainWindow = null;
 let splashWindow = null;
@@ -54,7 +65,10 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.on('second-instance', () => showWindow());
+  app.on('second-instance', (_event, argv) => {
+    if (hasStartMinimisedArg(argv)) return;
+    showWindow();
+  });
 
   // Dev-only: reload BrowserWindows on renderer changes; hard-restart on main/preload changes.
   if (!app.isPackaged) {
@@ -276,8 +290,7 @@ function createWindow() {
   mainWindow.webContents.on('did-finish-load', () => {
     closeSplash();
     applyWindowOpacity(store.getSettings().opacity);
-    const startMinimised = process.argv.includes(START_MINIMIZED_ARG) || getStartMinimised();
-    if (!startMinimised) {
+    if (!wasLaunchedMinimised()) {
       mainWindow.show();
       mainWindow.focus();
     }
@@ -371,6 +384,10 @@ function setStartMinimised(value) {
   syncLoginItemArgs();
   if (trayHandlers) updateTrayMenu(trayHandlers);
   sendToRenderer('settings:changed', store.getSettings());
+  if (!value && mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+    mainWindow.show();
+    mainWindow.focus();
+  }
 }
 
 function sendToRenderer(channel, payload) {
@@ -394,6 +411,7 @@ async function checkForUpdates(manual = false) {
 function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+  license.configureUpdaterFeed(autoUpdater);
 
   autoUpdater.on('update-available', (info) => {
     if (!Notification.isSupported()) return;
@@ -794,6 +812,11 @@ function registerIpc() {
     return { ok: true };
   });
 
+  ipcMain.handle('ui:openLicense', () => {
+    license.openLicenseDialog(mainWindow);
+    return { ok: true };
+  });
+
   ipcMain.handle('log:get', () => logger.getLogs());
   ipcMain.handle('log:clear', () => {
     logger.clearLogs();
@@ -832,12 +855,19 @@ function registerIpc() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   if (process.platform === 'win32') {
     app.setAppUserModelId('io.github.taylorivanoff.cmd-deck');
   }
   syncLoginItemArgs();
-  createSplash();
+
+  await license.init({
+    productSlug: 'cmd-deck',
+    appVersion: app.getVersion(),
+    parentWindow: () => mainWindow
+  });
+
+  if (!wasLaunchedMinimised()) createSplash();
   registerIpc();
   createWindow();
 
@@ -856,6 +886,7 @@ app.whenReady().then(() => {
     getSettings: () => store.getSettings(),
     setAlwaysOnTop: applyAlwaysOnTop,
     setStartMinimised,
+    getLicenseMenuItems: () => license.getTrayMenuItems(),
     reloadPath: () => {
       try {
         shells.reloadRuntime();
@@ -879,6 +910,9 @@ app.whenReady().then(() => {
     }
   };
   createTray(getIconPath(), trayHandlers);
+  license.on('change', () => {
+    if (trayHandlers) updateTrayMenu(trayHandlers);
+  });
   setupAutoUpdater();
 
   logger.onLog((entry) => {
@@ -912,5 +946,6 @@ app.on('before-quit', () => {
   closeLogWindow();
   closeAllTerminalWindows();
   closeSplash();
+  license.closeLicenseDialog();
   destroyTray();
 });
