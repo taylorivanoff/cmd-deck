@@ -51,6 +51,10 @@
     window.cmdDeck.openLog();
   });
 
+  document.getElementById('btn-manage-license').addEventListener('click', () => {
+    window.cmdDeck.openLicense();
+  });
+
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') window.close();
   });

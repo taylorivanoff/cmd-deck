@@ -124,5 +124,6 @@ module.exports = {
   getSettings,
   setSettings,
   getWindowBounds,
-  setWindowBounds
+  setWindowBounds,
+  settingsStore: store
 };

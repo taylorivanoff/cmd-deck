@@ -868,6 +868,7 @@ body.dialog-page.platform-darwin {
 
 .settings-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   padding-top: 4px;
 }

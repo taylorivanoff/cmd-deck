@@ -1,6 +1,6 @@
 (() => {
   const params = new URLSearchParams(window.location.search);
-  const editingId = params.get('id') || null;
+  let editingId = params.get('id') || null;
 
   const editorForm = document.getElementById('editor-form');
   const fieldCommand = document.getElementById('field-command');
@@ -304,22 +304,20 @@
     closeWindow();
   }
 
-  async function init() {
-    const state = await window.cmdDeck.getState();
-    shellOptions = state.shells || [];
-    defaultShell = state.defaultShell || (state.platform === 'darwin' ? 'zsh' : 'powershell');
-    document.body.classList.add(`platform-${state.platform || 'win32'}`);
-    if (state.dark) document.body.classList.add('dark');
+  async function loadEditorData() {
+    const data = await window.cmdDeck.getEditorInit(editingId);
+    shellOptions = data.shells || [];
+    defaultShell = data.defaultShell || (data.platform === 'darwin' ? 'zsh' : 'powershell');
+    document.body.classList.add(`platform-${data.platform || 'win32'}`);
+    if (data.dark) document.body.classList.add('dark');
     const hint = document.querySelector('.ide-status-hint');
     if (hint) {
-      hint.textContent = state.platform === 'darwin'
+      hint.textContent = data.platform === 'darwin'
         ? 'Tab indent · ⌘S save'
         : 'Tab indent · Ctrl+S save';
     }
 
-    const macro = editingId
-      ? (state.macros || []).find((m) => m.id === editingId)
-      : null;
+    const macro = data.macro || null;
 
     document.title = editingId ? 'Edit Macro' : 'Add Macro';
     fieldCommand.value = macro?.command || '';
@@ -330,6 +328,11 @@
     setImagePreview(macro?.imagePath || null);
     btnDelete.classList.toggle('hidden', !editingId);
     syncEditorChrome();
+  }
+
+  async function openEditor(macroId) {
+    editingId = macroId || null;
+    await loadEditorData();
     fieldCommand.focus();
     const len = fieldCommand.value.length;
     fieldCommand.setSelectionRange(len, len);
@@ -407,7 +410,14 @@
     }
   });
 
-  init().catch((err) => {
+  window.cmdDeck.onEditorOpen((macroId) => {
+    openEditor(macroId).catch((err) => {
+      console.error(err);
+      showToast('Failed to load editor', true);
+    });
+  });
+
+  openEditor(editingId).catch((err) => {
     console.error(err);
     showToast('Failed to load editor', true);
   });

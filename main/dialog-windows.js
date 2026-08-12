@@ -6,6 +6,8 @@ const { attachResizeLogging } = require('./window-debug');
 let editorWindow = null;
 /** @type {BrowserWindow | null} */
 let settingsWindow = null;
+/** @type {{ iconPath?: string }} */
+let editorWarmOpts = {};
 
 function centerOnParent(win, parent) {
   if (!parent || parent.isDestroyed()) {
@@ -33,7 +35,7 @@ function bringToFront(win, alwaysOnTop) {
   win.moveTop();
 }
 
-function createAuxWindow({ width, height, minWidth, minHeight, title, html, query, iconPath, parent, alwaysOnTop, resizable = true }) {
+function createAuxWindow({ width, height, minWidth, minHeight, title, html, query, iconPath, parent, alwaysOnTop, resizable = true, warm = false }) {
   const win = new BrowserWindow({
     width,
     height,
@@ -63,6 +65,7 @@ function createAuxWindow({ width, height, minWidth, minHeight, title, html, quer
   win.loadFile(path.join(__dirname, '..', 'renderer', html), { query: query || {} });
 
   win.once('ready-to-show', () => {
+    if (warm) return;
     centerOnParent(win, parent);
     bringToFront(win, alwaysOnTop);
   });
@@ -70,13 +73,60 @@ function createAuxWindow({ width, height, minWidth, minHeight, title, html, quer
   return win;
 }
 
+function sendEditorOpen(win, macroId) {
+  const send = () => win.webContents.send('editor:open', macroId || null);
+  if (win.webContents.isLoading()) {
+    win.webContents.once('did-finish-load', send);
+  } else {
+    send();
+  }
+}
+
+function scheduleEditorWarm() {
+  setImmediate(() => {
+    try {
+      warmEditorWindow(editorWarmOpts);
+    } catch (err) {
+      console.warn('CmdDeck editor warm-up failed:', err?.message || err);
+    }
+  });
+}
+
+function warmEditorWindow({ iconPath } = {}) {
+  if (iconPath) editorWarmOpts.iconPath = iconPath;
+
+  if (editorWindow && !editorWindow.isDestroyed()) return editorWindow;
+
+  editorWindow = createAuxWindow({
+    width: 820,
+    height: 560,
+    minWidth: 640,
+    minHeight: 420,
+    title: 'Add Macro',
+    html: 'editor.html',
+    query: {},
+    iconPath: editorWarmOpts.iconPath,
+    parent: null,
+    alwaysOnTop: false,
+    warm: true
+  });
+
+  editorWindow.on('closed', () => {
+    editorWindow = null;
+    scheduleEditorWarm();
+  });
+
+  return editorWindow;
+}
+
 function openEditorWindow({ macroId = null, iconPath, parent, alwaysOnTop = false } = {}) {
-  const query = macroId ? { id: String(macroId) } : {};
   const title = macroId ? 'Edit Macro' : 'Add Macro';
+  if (iconPath) editorWarmOpts.iconPath = iconPath;
 
   if (editorWindow && !editorWindow.isDestroyed()) {
     editorWindow.setTitle(title);
-    editorWindow.loadFile(path.join(__dirname, '..', 'renderer', 'editor.html'), { query });
+    sendEditorOpen(editorWindow, macroId);
+    centerOnParent(editorWindow, parent);
     bringToFront(editorWindow, alwaysOnTop);
     return editorWindow;
   }
@@ -88,7 +138,7 @@ function openEditorWindow({ macroId = null, iconPath, parent, alwaysOnTop = fals
     minHeight: 420,
     title,
     html: 'editor.html',
-    query,
+    query: macroId ? { id: String(macroId) } : {},
     iconPath,
     parent,
     alwaysOnTop
@@ -96,6 +146,7 @@ function openEditorWindow({ macroId = null, iconPath, parent, alwaysOnTop = fals
 
   editorWindow.on('closed', () => {
     editorWindow = null;
+    scheduleEditorWarm();
   });
 
   return editorWindow;
@@ -150,7 +201,10 @@ function setDialogWindowsAlwaysOnTop(value) {
 }
 
 function closeDialogWindows() {
-  if (editorWindow && !editorWindow.isDestroyed()) editorWindow.destroy();
+  if (editorWindow && !editorWindow.isDestroyed()) {
+    editorWindow.removeAllListeners('closed');
+    editorWindow.destroy();
+  }
   if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.destroy();
   editorWindow = null;
   settingsWindow = null;
@@ -158,6 +212,7 @@ function closeDialogWindows() {
 
 module.exports = {
   openEditorWindow,
+  warmEditorWindow,
   openSettingsWindow,
   getEditorWindow,
   getSettingsWindow,
