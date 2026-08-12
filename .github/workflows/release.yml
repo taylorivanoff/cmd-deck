@@ -117,9 +117,24 @@ jobs:
       - name: Install frontend deps
         working-directory: app
         run: bun install
+      - name: Skip updater artifacts without signing key
+        working-directory: app
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+            jq '.bundle.createUpdaterArtifacts = false' src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp
+            mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
+            echo "No TAURI_SIGNING_PRIVATE_KEY — disabled createUpdaterArtifacts"
+          else
+            echo "TAURI_SIGNING_PRIVATE_KEY present — updater artifacts enabled"
+          fi
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: app
           tagName: v__VERSION__
