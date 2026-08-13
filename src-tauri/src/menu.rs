@@ -12,9 +12,9 @@ const PREFIX: &str = "macro-menu:";
 /// `popupMacroContextMenu` in `main/app-ipc.js`.
 pub fn build_macro_menu(app: &AppHandle, state: &AppState, id: &str) -> tauri::Result<Menu<Wry>> {
     let is_running = state.running.lock().contains_key(id);
-    let macros = state.macros.lock();
-    let index = macros.iter().position(|m| m.id == id).unwrap_or(0);
-    let last = macros.len().saturating_sub(1);
+    let visible = store::macros_for_active_page(&state.deck.lock());
+    let index = visible.iter().position(|m| m.id == id).unwrap_or(0);
+    let last = visible.len().saturating_sub(1);
 
     let run_label = if is_running { "Stop" } else { "Run" };
     let run_item = MenuItem::with_id(app, format!("{PREFIX}run:{id}"), run_label, true, None::<&str>)?;
@@ -73,19 +73,20 @@ pub fn handle_macro_menu_event(app: &AppHandle, raw_id: &str) {
         "edit" => windows::open_editor_window(app, Some(id)),
         "duplicate" => {
             if store::duplicate_macro(&state, &id).is_some() {
-                store::broadcast_macros(app, &state);
+                let _ = crate::hotkeys::sync_hotkeys(app);
+                store::broadcast_deck(app, &state);
             }
         }
         "move-left" => {
             store::move_macro(&state, &id, -1);
-            store::broadcast_macros(app, &state);
+            store::broadcast_deck(app, &state);
         }
         "move-right" => {
             store::move_macro(&state, &id, 1);
-            store::broadcast_macros(app, &state);
+            store::broadcast_deck(app, &state);
         }
         "delete" => {
-            let macro_ = state.macros.lock().iter().find(|m| m.id == id).cloned();
+            let macro_ = store::find_macro(&state, &id);
             let Some(macro_) = macro_ else { return };
             let detail = {
                 let name = macro_.name.trim();
@@ -111,7 +112,8 @@ pub fn handle_macro_menu_event(app: &AppHandle, raw_id: &str) {
                     runner::stop_macro(&app2, &id);
                 }
                 store::delete_macro(&state2, &id);
-                store::broadcast_macros(&app2, &state2);
+                let _ = crate::hotkeys::sync_hotkeys(&app2);
+                store::broadcast_deck(&app2, &state2);
             });
         }
         _ => {}

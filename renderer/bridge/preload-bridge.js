@@ -1,7 +1,6 @@
 /**
  * Recreates the Electron `window.cmdDeck` preload API on top of
- * `window.tauriTrayBridge` (see vendor/tauri-tray-bridge.js) so the existing
- * renderer JS (app.js / editor.js / settings.js) works unchanged.
+ * `window.tauriTrayBridge` (see vendor/tauri-tray-bridge.js).
  */
 (function (global) {
   const { invoke, listen } = global.tauriTrayBridge;
@@ -21,6 +20,20 @@
 
   global.cmdDeck = {
     getState: () => invoke("cmddeck_get_state"),
+    getDeck: () => invoke("deck_get"),
+    setActiveProfile: (profileId) => invoke("deck_set_active_profile", { profileId }),
+    setActivePage: (pageId) => invoke("deck_set_active_page", { pageId }),
+    addProfile: (name) => invoke("deck_add_profile", { name }),
+    addPage: (name) => invoke("deck_add_page", { name }),
+    duplicateProfile: (profileId) => invoke("deck_duplicate_profile", { profileId }),
+    listPacks: () => invoke("packs_list"),
+    exportPack: (profileId) => invoke("packs_export", { profileId: profileId || null }),
+    exportPackToFile: (path, profileId) => invoke("packs_export_to_file", { path, profileId: profileId || null }),
+    importPack: (pack, mode) => invoke("packs_import", { pack, mode }),
+    importPackFile: (path, mode) => invoke("packs_import_file", { path, mode }),
+    pickPack: () => invoke("dialog_pick_pack"),
+    savePack: (suggestedName) => invoke("dialog_save_pack", { suggestedName }),
+    getLanInfo: () => invoke("lan_get_info"),
     getEditorInit: (macroId) => invoke("ui_get_editor_init", { macroId: macroId || null }),
     listMacros: () => invoke("macros_list"),
     addMacro: (partial) => invoke("macros_add", { partial }),
@@ -41,6 +54,7 @@
     showItemInFolder: (filePath) => invoke("shell_show_item", { path: filePath }),
     closeWindow: () => global.tauriTrayBridge.closeCurrentWindow(),
     onMacrosChanged: (cb) => onEvent("macros:changed", cb),
+    onDeckChanged: (cb) => onEvent("deck:changed", cb),
     onSettingsChanged: (cb) => onEvent("settings:changed", cb),
     onStatus: (cb) => onEvent("macros:status", cb),
     onToast: (cb) => onEvent("macros:toast", cb),

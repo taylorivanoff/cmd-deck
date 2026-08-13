@@ -18,7 +18,14 @@ Ideal for developers or power users who want a lightweight **desktop command pal
 - Optional working directory per command
 - Tray icon with show/hide, always-on-top, start minimised, updates
 - Window bounds persistence, splash screen, single-instance, auto-updater
-- Close hides to tray (Quit from tray menu)
+- **Profiles and pages** — multiple decks with tabbed pages
+- **Macro packs** — import/export `.cmddeck-pack.json`; 7 built-in starter packs in `packs/`
+- **Global hotkeys** — optional shortcut per macro (e.g. `Ctrl+Shift+1`)
+- **Confirm before run** — safety prompt for destructive commands
+- **Workflow variables** — `{{date}}`, `{{cwd}}`, `{{env:VAR}}`, `{{gitBranch}}` in commands
+- **SSH remote macros** — run commands on remote hosts over SSH
+- **LAN web remote** — control the deck from a phone on the same Wi‑Fi
+- **Action types** — run command, open URL, open path, or SSH
 
 ## Installation
 
@@ -26,6 +33,14 @@ Ideal for developers or power users who want a lightweight **desktop command pal
 
 1. Download the latest installer from [Releases](https://github.com/taylorivanoff/cmd-deck/releases)
 2. Run the installer and follow the prompts
+
+### Linux
+
+1. Download the `.deb` or `.AppImage` from [Releases](https://github.com/taylorivanoff/cmd-deck/releases)
+2. **deb:** `sudo dpkg -i cmd-deck_*.deb`
+3. **AppImage:** `chmod +x CmdDeck_*.AppImage` then run it
+
+No udev rules are required — CmdDeck is a software-only macro pad.
 
 ### macOS
 

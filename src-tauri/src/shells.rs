@@ -81,6 +81,16 @@ fn find_pwsh7() -> Option<PathBuf> {
 }
 
 #[cfg(windows)]
+fn find_wsl() -> Option<PathBuf> {
+    let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".into());
+    let wsl = Path::new(&system_root).join("System32").join("wsl.exe");
+    if exists(&wsl) {
+        return Some(wsl);
+    }
+    which("wsl.exe")
+}
+
+#[cfg(windows)]
 fn find_git_bash() -> Option<PathBuf> {
     for root in program_files_roots() {
         for candidate in [
@@ -194,6 +204,18 @@ pub fn detect_shells() -> Vec<ShellInfo> {
                 },
             );
         }
+
+        if let Some(wsl) = find_wsl() {
+            push_unique(
+                &mut list,
+                ShellInfo {
+                    id: "wsl".into(),
+                    name: "WSL".into(),
+                    executable: wsl,
+                    kind: ShellKind::Posix,
+                },
+            );
+        }
     }
 
     #[cfg(not(windows))]
@@ -201,6 +223,9 @@ pub fn detect_shells() -> Vec<ShellInfo> {
         for (id, name, candidates) in [
             ("sh", "sh", vec!["/bin/sh", "/usr/bin/sh"]),
             ("bash", "bash", vec!["/bin/bash", "/usr/bin/bash", "/usr/local/bin/bash", "/opt/homebrew/bin/bash"]),
+            ("zsh", "zsh", vec!["/bin/zsh", "/usr/bin/zsh", "/usr/local/bin/zsh", "/opt/homebrew/bin/zsh"]),
+            ("fish", "fish", vec!["/usr/bin/fish", "/usr/local/bin/fish", "/opt/homebrew/bin/fish"]),
+            ("nu", "Nushell", vec!["/usr/bin/nu", "/usr/local/bin/nu", "/opt/homebrew/bin/nu"]),
         ] {
             let exe = which(id).or_else(|| {
                 candidates
@@ -215,6 +240,36 @@ pub fn detect_shells() -> Vec<ShellInfo> {
                         id: id.into(),
                         name: name.into(),
                         executable: exe,
+                        kind: ShellKind::Posix,
+                    },
+                );
+            }
+        }
+
+        if let Ok(content) = std::fs::read_to_string("/etc/shells") {
+            for line in content.lines() {
+                let line = line.trim();
+                if line.is_empty() || !line.starts_with('/') {
+                    continue;
+                }
+                let path = PathBuf::from(line);
+                if !exists(&path) {
+                    continue;
+                }
+                let id = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("sh")
+                    .to_string();
+                if ["sh", "bash", "zsh", "fish", "nu"].contains(&id.as_str()) {
+                    continue;
+                }
+                push_unique(
+                    &mut list,
+                    ShellInfo {
+                        id: id.clone(),
+                        name: id,
+                        executable: path,
                         kind: ShellKind::Posix,
                     },
                 );
@@ -250,12 +305,16 @@ pub fn default_shell_id(shells: &[ShellInfo]) -> String {
     #[cfg(not(windows))]
     {
         if let Ok(shell_env) = std::env::var("SHELL") {
-            if shell_env.contains("bash") && shells.iter().any(|s| s.id == "bash") {
-                return "bash".into();
+            for id in ["zsh", "bash", "fish", "nu", "sh"] {
+                if shell_env.contains(id) && shells.iter().any(|s| s.id == id) {
+                    return id.into();
+                }
             }
         }
-        if shells.iter().any(|s| s.id == "bash") {
-            return "bash".into();
+        for id in ["zsh", "bash", "fish", "nu"] {
+            if shells.iter().any(|s| s.id == id) {
+                return id.into();
+            }
         }
     }
     shells
@@ -274,6 +333,7 @@ pub fn migrate_shell_id(value: Option<&str>, shells: &[ShellInfo]) -> String {
         "builtin" | "terminal" | "iterm" | "warp" | "alacritty" | "kitty" | "hyper" | "" => default,
         "windows-terminal" => "cmd".into(),
         "git-bash" => "bash".into(),
+        "wsl-bash" => "wsl".into(),
         other => other.to_string(),
     }
 }
@@ -287,6 +347,15 @@ pub fn resolve_shell<'a>(id: &str, shells: &'a [ShellInfo]) -> Option<&'a ShellI
 }
 
 pub fn spawn_args(shell: &ShellInfo, command: &str) -> Vec<String> {
+    if shell.id == "wsl" {
+        return vec!["-e".into(), "bash".into(), "-lc".into(), command.to_string()];
+    }
+    if shell.id == "fish" {
+        return vec!["-lc".into(), command.to_string()];
+    }
+    if shell.id == "nu" {
+        return vec!["-c".into(), command.to_string()];
+    }
     match shell.kind {
         ShellKind::PowerShell => vec![
             "-NoProfile".into(),

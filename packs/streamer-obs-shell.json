@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "name": "Streamer OBS Shell",
+  "description": "OBS WebSocket scene switches via curl (set OBS host/port)",
+  "profile": {
+    "id": "stream",
+    "name": "Stream Setup",
+    "columns": 3,
+    "rows": 1,
+    "activePageId": "p1",
+    "pages": [{ "id": "p1", "name": "Scenes", "macroIds": ["scene-main", "scene-brb", "obs-url"] }]
+  },
+  "macros": [
+    {
+      "id": "scene-main",
+      "name": "Scene: Main",
+      "command": "curl -s -X POST http://127.0.0.1:4455/api/requests -H \"Content-Type: application/json\" -d \"{\\\"requestType\\\":\\\"SetCurrentProgramScene\\\",\\\"requestData\\\":{\\\"sceneName\\\":\\\"Main\\\"}}\"",
+      "shell": "pwsh",
+      "actionType": "runCommand",
+      "showTerminal": false,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "scene-brb",
+      "name": "Scene: BRB",
+      "command": "curl -s -X POST http://127.0.0.1:4455/api/requests -H \"Content-Type: application/json\" -d \"{\\\"requestType\\\":\\\"SetCurrentProgramScene\\\",\\\"requestData\\\":{\\\"sceneName\\\":\\\"BRB\\\"}}\"",
+      "shell": "pwsh",
+      "actionType": "runCommand",
+      "showTerminal": false,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "obs-url",
+      "name": "Open OBS",
+      "command": "obs64://",
+      "actionType": "openUrl",
+      "showTerminal": false,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    }
+  ]
+}

@@ -26,6 +26,9 @@
   },
   "bundle": {
     "active": true,
+    "resources": {
+      "../packs/*": "packs/"
+    },
     "targets": [
       "nsis"
     ],

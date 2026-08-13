@@ -1,10 +1,15 @@
 mod commands;
+mod hotkeys;
 mod logger;
 mod menu;
+mod path_env;
 mod runner;
 mod shells;
+mod ssh_runner;
 mod state;
 mod store;
+mod variables;
+mod web_server;
 mod windows;
 
 use std::collections::HashMap;
@@ -17,6 +22,7 @@ use tauri_tray_base::{
 };
 
 use state::AppState;
+use store::load_deck;
 
 const APP_NAME: &str = "CmdDeck";
 
@@ -24,11 +30,24 @@ const APP_NAME: &str = "CmdDeck";
 pub fn run() {
     let builder = tauri_tray_base::with_common_plugins(tauri::Builder::default())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             tauri_tray_base::settings_get,
             commands::settings_set,
             commands::cmddeck_get_state,
             commands::shells_list,
+            commands::deck_get,
+            commands::deck_set_active_profile,
+            commands::deck_set_active_page,
+            commands::deck_add_profile,
+            commands::deck_add_page,
+            commands::deck_duplicate_profile,
+            commands::packs_list,
+            commands::packs_export,
+            commands::packs_export_to_file,
+            commands::packs_import,
+            commands::packs_import_file,
+            commands::lan_get_info,
             commands::macros_list,
             commands::macros_add,
             commands::macros_update,
@@ -47,6 +66,8 @@ pub fn run() {
             commands::log_clear,
             commands::dialog_pick_image,
             commands::dialog_pick_folder,
+            commands::dialog_pick_pack,
+            commands::dialog_save_pack,
             commands::shell_show_item,
         ])
         .setup(move |app| {
@@ -57,6 +78,8 @@ pub fn run() {
             defaults.insert("columns".into(), json!(3));
             defaults.insert("rows".into(), json!(1));
             defaults.insert("sizeLocked".into(), json!(false));
+            defaults.insert("lanWebEnabled".into(), json!(false));
+            defaults.insert("lanWebPort".into(), json!(8742));
 
             install_state(
                 app.handle(),
@@ -77,20 +100,22 @@ pub fn run() {
                 .app_data_dir()
                 .unwrap_or_else(|_| std::env::current_dir().unwrap_or_else(|_| ".".into()));
             let _ = std::fs::create_dir_all(&data_dir);
-            let macros_path = data_dir.join("macros.json");
-            let macros = store::load_macros(&macros_path);
-            app.manage(AppState::new(macros_path, macros));
+            let deck_path = data_dir.join("macros.json");
+            let deck = load_deck(&deck_path);
+            app.manage(AppState::new(deck_path, deck));
+            app.manage(web_server::WebServerState::new());
 
             setup_tray(app.handle(), TraySetupOptions::default())?;
             apply_window_settings(app.handle());
             sync_autostart(app.handle());
+            hotkeys::init(app.handle());
+            web_server::sync_from_settings(app.handle());
 
             let handle_for_quit = app.handle().clone();
             tauri_tray_base::set_on_before_quit(app.handle(), move || {
-                // Window teardown must happen on the main thread; the hook itself
-                // runs on a worker thread (see tauri-tray-base's `request_quit`).
                 let handle = handle_for_quit.clone();
                 let _ = handle_for_quit.run_on_main_thread(move || {
+                    web_server::stop(&handle);
                     windows::close_all_aux_windows(&handle);
                 });
             });

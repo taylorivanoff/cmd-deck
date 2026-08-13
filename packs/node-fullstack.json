@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "name": "Node Fullstack",
+  "description": "Install, dev server, test, and lint",
+  "profile": {
+    "id": "node",
+    "name": "Node Fullstack",
+    "columns": 2,
+    "rows": 2,
+    "activePageId": "p1",
+    "pages": [{ "id": "p1", "name": "Node", "macroIds": ["install", "dev", "test", "lint"] }]
+  },
+  "macros": [
+    { "id": "install", "name": "npm install", "command": "npm install", "shell": "pwsh", "actionType": "runCommand", "showTerminal": true, "confirmBeforeRun": false, "createdAt": 0, "updatedAt": 0 },
+    { "id": "dev", "name": "npm run dev", "command": "npm run dev", "shell": "pwsh", "actionType": "runCommand", "showTerminal": true, "confirmBeforeRun": false, "createdAt": 0, "updatedAt": 0 },
+    { "id": "test", "name": "npm test", "command": "npm test", "shell": "pwsh", "actionType": "runCommand", "showTerminal": true, "confirmBeforeRun": false, "createdAt": 0, "updatedAt": 0 },
+    { "id": "lint", "name": "npm run lint", "command": "npm run lint", "shell": "pwsh", "actionType": "runCommand", "showTerminal": true, "confirmBeforeRun": false, "createdAt": 0, "updatedAt": 0 }
+  ]
+}

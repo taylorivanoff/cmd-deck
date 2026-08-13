@@ -25,7 +25,31 @@
       <input type="range" id="setting-opacity" min="0" max="65" step="1" />
       <output id="setting-opacity-out">6%</output>
     </label>
+
+    <h2 class="settings-section">Macro packs</h2>
     <div class="settings-actions">
+      <button type="button" class="btn" id="btn-import-pack">Import pack…</button>
+      <button type="button" class="btn" id="btn-export-pack">Export profile</button>
+    </div>
+    <label class="field">
+      <span>Built-in packs</span>
+      <select id="pack-select"></select>
+      <button type="button" class="btn" id="btn-install-pack">Install selected</button>
+    </label>
+
+    <h2 class="settings-section">LAN remote</h2>
+    <label class="toggle-row">
+      <span>Enable phone/tablet remote</span>
+      <input type="checkbox" id="setting-lan" />
+    </label>
+    <label class="field">
+      <span>Port</span>
+      <input type="number" id="setting-lan-port" min="1024" max="65535" value="8742" />
+    </label>
+    <p class="meta" id="lan-url"></p>
+
+    <div class="settings-actions">
+      <button type="button" class="btn" id="btn-add-profile">New profile</button>
       <button type="button" class="btn" id="btn-open-log">Activity log</button>
     </div>
     <p class="meta" id="settings-meta"></p>

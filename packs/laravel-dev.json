@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "name": "Laravel Dev",
+  "description": "Boot, serve, and ship a Laravel project",
+  "profile": {
+    "id": "laravel",
+    "name": "Laravel Dev",
+    "columns": 3,
+    "rows": 2,
+    "activePageId": "p1",
+    "pages": [{ "id": "p1", "name": "Dev", "macroIds": ["boot", "serve", "queue", "vite", "pr-check"] }]
+  },
+  "macros": [
+    {
+      "id": "boot",
+      "name": "Boot project",
+      "command": "git pull\ncomposer install\nnpm install\nphp artisan migrate\ndocker compose up -d",
+      "shell": "pwsh",
+      "actionType": "runCommand",
+      "showTerminal": true,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "serve",
+      "name": "Artisan serve",
+      "command": "php artisan serve",
+      "shell": "pwsh",
+      "actionType": "runCommand",
+      "showTerminal": true,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "queue",
+      "name": "Queue worker",
+      "command": "php artisan queue:work",
+      "shell": "pwsh",
+      "actionType": "runCommand",
+      "showTerminal": true,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "vite",
+      "name": "Vite dev",
+      "command": "npm run dev",
+      "shell": "pwsh",
+      "actionType": "runCommand",
+      "showTerminal": true,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "pr-check",
+      "name": "PR check",
+      "command": "git status\nnpm run lint\nnpm test",
+      "shell": "pwsh",
+      "actionType": "runCommand",
+      "showTerminal": true,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    }
+  ]
+}

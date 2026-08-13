@@ -7,7 +7,10 @@
   const settingRows = document.getElementById('setting-rows');
 
   let macros = [];
+  let deck = { profiles: [], activeProfileId: '', activeProfile: null, activePage: null };
   let settings = { columns: 3, rows: 1, opacity: 0.94, alwaysOnTop: true, startMinimised: false, sizeLocked: false };
+  const profileSelect = document.getElementById('profile-select');
+  const pageTabs = document.getElementById('page-tabs');
   const btnLock = document.getElementById('btn-lock');
   let running = new Set();
   let flash = new Map();
@@ -35,6 +38,59 @@
     const normalized = filePath.replace(/\\/g, '/');
     if (/^[A-Za-z]:\//.test(normalized)) return `file:///${normalized}`;
     return `file://${normalized}`;
+  }
+
+  function applyDeck(deckData) {
+    if (!deckData) return;
+    deck = deckData;
+    macros = deckData.macros || [];
+    if (deckData.activeProfile) {
+      settings = {
+        ...settings,
+        columns: deckData.activeProfile.columns || settings.columns,
+        rows: deckData.activeProfile.rows || settings.rows,
+      };
+    }
+    renderDeckNav();
+    syncGridInputs();
+    applyLayout();
+    render();
+  }
+
+  function renderDeckNav() {
+    if (!profileSelect || !pageTabs) return;
+    profileSelect.innerHTML = '';
+    for (const profile of deck.profiles || []) {
+      const opt = document.createElement('option');
+      opt.value = profile.id;
+      opt.textContent = profile.name;
+      opt.selected = profile.id === deck.activeProfileId;
+      profileSelect.appendChild(opt);
+    }
+    pageTabs.innerHTML = '';
+    const profile = deck.activeProfile;
+    if (!profile) return;
+    for (const page of profile.pages || []) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'page-tab' + (page.id === profile.activePageId ? ' is-active' : '');
+      btn.textContent = page.name || 'Page';
+      btn.setAttribute('role', 'tab');
+      btn.addEventListener('click', async () => {
+        if (page.id === profile.activePageId) return;
+        await window.cmdDeck.setActivePage(page.id);
+      });
+      pageTabs.appendChild(btn);
+    }
+    const addPage = document.createElement('button');
+    addPage.type = 'button';
+    addPage.className = 'page-tab page-tab-add';
+    addPage.textContent = '+';
+    addPage.title = 'Add page';
+    addPage.addEventListener('click', async () => {
+      await window.cmdDeck.addPage('');
+    });
+    pageTabs.appendChild(addPage);
   }
 
   function applyLayout() {
@@ -346,7 +402,7 @@
 
   async function init() {
     const state = await window.cmdDeck.getState();
-    macros = state.macros || [];
+    applyDeck(state.deck || { macros: state.macros || [] });
     settings = state.settings || settings;
     running = new Set(state.runningIds || []);
 
@@ -360,6 +416,10 @@
     window.cmdDeck.onMacrosChanged((next) => {
       macros = next || [];
       render();
+    });
+
+    window.cmdDeck.onDeckChanged((next) => {
+      applyDeck(next);
     });
 
     window.cmdDeck.onSettingsChanged((next) => {
@@ -391,6 +451,12 @@
     window.cmdDeck.onToast((payload) => {
       if (!payload?.message) return;
       showToast(payload.message, !!payload.error);
+    });
+  }
+
+  if (profileSelect) {
+    profileSelect.addEventListener('change', async () => {
+      await window.cmdDeck.setActiveProfile(profileSelect.value);
     });
   }
 

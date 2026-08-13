@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "name": "Docker Compose",
+  "description": "Stack up, logs, and down",
+  "profile": {
+    "id": "docker",
+    "name": "Docker Compose",
+    "columns": 3,
+    "rows": 1,
+    "activePageId": "p1",
+    "pages": [{ "id": "p1", "name": "Compose", "macroIds": ["up", "logs", "down"] }]
+  },
+  "macros": [
+    { "id": "up", "name": "Compose up", "command": "docker compose up -d", "shell": "pwsh", "actionType": "runCommand", "showTerminal": true, "confirmBeforeRun": false, "createdAt": 0, "updatedAt": 0 },
+    { "id": "logs", "name": "Compose logs", "command": "docker compose logs -f --tail=200", "shell": "pwsh", "actionType": "runCommand", "showTerminal": true, "confirmBeforeRun": false, "createdAt": 0, "updatedAt": 0 },
+    { "id": "down", "name": "Compose down", "command": "docker compose down", "shell": "pwsh", "actionType": "runCommand", "showTerminal": false, "confirmBeforeRun": true, "confirmMessage": "Stop all compose services?", "createdAt": 0, "updatedAt": 0 }
+  ]
+}

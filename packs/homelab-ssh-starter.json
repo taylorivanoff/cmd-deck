@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "name": "Homelab SSH Starter",
+  "description": "SSH buttons for common server tasks (edit host/user/key per machine)",
+  "profile": {
+    "id": "homelab",
+    "name": "Homelab SSH",
+    "columns": 2,
+    "rows": 2,
+    "activePageId": "p1",
+    "pages": [{ "id": "p1", "name": "Server", "macroIds": ["disk", "docker-ps", "restart-stack", "updates"] }]
+  },
+  "macros": [
+    {
+      "id": "disk",
+      "name": "Disk space",
+      "command": "df -h",
+      "actionType": "ssh",
+      "sshHost": "192.168.1.10",
+      "sshUser": "admin",
+      "showTerminal": true,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "docker-ps",
+      "name": "Docker ps",
+      "command": "docker ps",
+      "actionType": "ssh",
+      "sshHost": "192.168.1.10",
+      "sshUser": "admin",
+      "showTerminal": true,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "restart-stack",
+      "name": "Restart stack",
+      "command": "cd ~/stack && docker compose restart",
+      "actionType": "ssh",
+      "sshHost": "192.168.1.10",
+      "sshUser": "admin",
+      "showTerminal": true,
+      "confirmBeforeRun": true,
+      "confirmMessage": "Restart the homelab stack?",
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "updates",
+      "name": "APT update",
+      "command": "sudo apt update && sudo apt upgrade -y",
+      "actionType": "ssh",
+      "sshHost": "192.168.1.10",
+      "sshUser": "admin",
+      "showTerminal": true,
+      "confirmBeforeRun": true,
+      "confirmMessage": "Run system updates on the server?",
+      "createdAt": 0,
+      "updatedAt": 0
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CmdDeck Remote</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: #111; color: #eee; padding: 12px; }
+    h1 { font-size: 1.1rem; margin: 0 0 12px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+    button { min-height: 72px; border: 1px solid #333; border-radius: 8px; background: #1c1c1c; color: #fff; padding: 8px; }
+    button.running { outline: 2px solid #4caf50; }
+    button:active { transform: scale(0.98); }
+    .status { margin-top: 12px; font-size: 0.85rem; color: #aaa; }
+  </style>
+</head>
+<body>
+  <h1>CmdDeck Remote</h1>
+  <div class="grid" id="grid"></div>
+  <p class="status" id="status">Loading…</p>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token') || '';
+    const running = new Set();
+
+    async function api(path, options) {
+      const res = await fetch(path + '?token=' + encodeURIComponent(token), options);
+      return res.json();
+    }
+
+    function label(m) {
+      if (m.name) return m.name;
+      const cmd = (m.command || '').trim().split(/\r?\n/)[0] || 'Macro';
+      return cmd.length > 24 ? cmd.slice(0, 21) + '…' : cmd;
+    }
+
+    async function refresh() {
+      const data = await api('/api/state');
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      for (const m of data.macros || []) {
+        const btn = document.createElement('button');
+        btn.textContent = label(m);
+        btn.className = running.has(m.id) ? 'running' : '';
+        btn.onclick = async () => {
+          if (running.has(m.id)) {
+            await fetch('/api/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, id: m.id }) });
+            running.delete(m.id);
+          } else {
+            running.add(m.id);
+            await fetch('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, id: m.id }) });
+          }
+          refresh();
+        };
+        grid.appendChild(btn);
+      }
+      document.getElementById('status').textContent = (data.activeProfile?.name || 'Profile') + ' · ' + (data.macros?.length || 0) + ' buttons';
+    }
+
+    refresh().catch((e) => { document.getElementById('status').textContent = String(e); });
+    setInterval(refresh, 4000);
+  </script>
+</body>
+</html>

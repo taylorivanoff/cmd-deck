@@ -100,6 +100,8 @@ jobs:
             args: --bundles nsis
           - platform: macos-latest
             args: --bundles dmg
+          - platform: ubuntu-latest
+            args: --bundles deb,appimage
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout app

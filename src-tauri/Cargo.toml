@@ -18,6 +18,7 @@ tauri-plugin-opener = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-dialog = "2"
+tauri-plugin-global-shortcut = "2"
 tauri-tray-base = { path = "../../tauri-tray-base" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -26,6 +27,8 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 which = "7"
 uuid = { version = "1", features = ["v4"] }
 base64 = "0.22"
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "name": "Daily Routines",
+  "description": "Start workday apps and tidy downloads",
+  "profile": {
+    "id": "daily",
+    "name": "Daily Routines",
+    "columns": 2,
+    "rows": 2,
+    "activePageId": "p1",
+    "pages": [{ "id": "p1", "name": "Day", "macroIds": ["workday", "github", "projects", "tidy"] }]
+  },
+  "macros": [
+    {
+      "id": "workday",
+      "name": "Start workday",
+      "command": "Start-Process https://mail.google.com\nStart-Process https://calendar.google.com\nStart-Process https://github.com/notifications",
+      "shell": "pwsh",
+      "actionType": "runCommand",
+      "showTerminal": false,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "command": "https://github.com",
+      "actionType": "openUrl",
+      "showTerminal": false,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "projects",
+      "name": "Open Projects",
+      "command": "{{env:USERPROFILE}}\\Projects",
+      "actionType": "openPath",
+      "showTerminal": false,
+      "confirmBeforeRun": false,
+      "createdAt": 0,
+      "updatedAt": 0
+    },
+    {
+      "id": "tidy",
+      "name": "Tidy Downloads",
+      "command": "$downloads = [Environment]::GetFolderPath('UserProfile') + '\\Downloads'\nGet-ChildItem $downloads -File | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } | Remove-Item -Force",
+      "shell": "pwsh",
+      "actionType": "runCommand",
+      "showTerminal": true,
+      "confirmBeforeRun": true,
+      "confirmMessage": "Delete Downloads files older than 30 days?",
+      "createdAt": 0,
+      "updatedAt": 0
+    }
+  ]
+}

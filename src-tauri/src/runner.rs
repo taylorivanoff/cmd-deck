@@ -7,12 +7,16 @@ use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::logger;
+use crate::path_env;
 use crate::shells;
+use crate::ssh_runner;
 use crate::state::{AppState, Macro, RunningEntry};
+use crate::store;
+use crate::variables;
 
-const MAX_BUFFER: usize = 200_000;
+pub const MAX_BUFFER: usize = 200_000;
 
-fn now_ms() -> i64 {
+pub fn now_ms() -> i64 {
     chrono::Utc::now().timestamp_millis()
 }
 
@@ -90,7 +94,6 @@ fn macro_label(name: &str, command: &str) -> String {
     }
 }
 
-/// Emit a status event to all windows plus the activity log, mirroring Electron's `logMacroStatus`.
 pub fn log_macro_status(app: &AppHandle, payload: &Value) {
     let Some(id) = payload.get("id").and_then(|v| v.as_str()) else {
         return;
@@ -102,10 +105,7 @@ pub fn log_macro_status(app: &AppHandle, payload: &Value) {
         .filter(|s| !s.is_empty())
         .map(|s| s.to_string())
         .unwrap_or_else(|| {
-            let macros = state.macros.lock();
-            macros
-                .iter()
-                .find(|m| m.id == id)
+            store::find_macro(&state, id)
                 .map(|m| macro_label(&m.name, &m.command))
                 .unwrap_or_else(|| "Macro".into())
         });
@@ -160,7 +160,7 @@ pub fn log_macro_status(app: &AppHandle, payload: &Value) {
     }
 }
 
-fn read_stream<R: Read>(
+pub fn read_stream<R: Read>(
     app: AppHandle,
     entry: Arc<Mutex<RunningEntry>>,
     id: String,
@@ -198,7 +198,7 @@ fn read_stream<R: Read>(
     }
 }
 
-fn finalize(app: &AppHandle, entry: &Arc<Mutex<RunningEntry>>, status: std::io::Result<std::process::ExitStatus>) {
+pub fn finalize(app: &AppHandle, entry: &Arc<Mutex<RunningEntry>>, status: std::io::Result<std::process::ExitStatus>) {
     let (id, name, command, shell, show_terminal, started_at, stopping, stdout, stderr) = {
         let e = entry.lock();
         (
@@ -257,10 +257,75 @@ pub struct SpawnOutcome {
     pub shell_id: String,
 }
 
-/// Spawn the macro's command and stream stdout/stderr as `macro:output` events,
-/// finishing with a `macros:status` event once the process exits.
+fn resolved_command(macro_: &Macro, profile_name: Option<&str>) -> String {
+    variables::substitute(
+        &macro_.command,
+        macro_.cwd.as_deref(),
+        profile_name,
+        &macro_.env,
+    )
+}
+
+fn run_open_url(macro_: &Macro, profile_name: Option<&str>) -> Result<(), String> {
+    let url = resolved_command(macro_, profile_name);
+    if url.trim().is_empty() {
+        return Err("URL is empty.".into());
+    }
+    tauri_plugin_opener::open_url(url.trim(), None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
+fn run_open_path(macro_: &Macro, profile_name: Option<&str>) -> Result<(), String> {
+    let path = resolved_command(macro_, profile_name);
+    if path.trim().is_empty() {
+        return Err("Path is empty.".into());
+    }
+    tauri_plugin_opener::open_path(path.trim(), None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
+fn emit_instant_success(app: &AppHandle, macro_: &Macro, shell_id: &str, command: &str) {
+    let started_at = now_ms();
+    let payload = json!({
+        "id": macro_.id, "status": "success", "shell": shell_id,
+        "showTerminal": macro_.show_terminal, "name": macro_.name,
+        "command": command, "startedAt": started_at
+    });
+    log_macro_status(app, &payload);
+    let _ = app.emit("macros:status", payload);
+}
+
 pub fn run_macro(app: &AppHandle, macro_: &Macro) -> Result<SpawnOutcome, String> {
-    if macro_.command.trim().is_empty() {
+    let state = app.state::<AppState>();
+    let profile_name = store::profile_name_for_macro(&state, &macro_.id);
+
+    match macro_.action_type.as_str() {
+        "openUrl" => {
+            let command = resolved_command(macro_, profile_name.as_deref());
+            run_open_url(macro_, profile_name.as_deref())?;
+            emit_instant_success(app, macro_, "openUrl", &command);
+            return Ok(SpawnOutcome {
+                pid: 0,
+                shell_id: "openUrl".into(),
+            });
+        }
+        "openPath" => {
+            let command = resolved_command(macro_, profile_name.as_deref());
+            run_open_path(macro_, profile_name.as_deref())?;
+            emit_instant_success(app, macro_, "openPath", &command);
+            return Ok(SpawnOutcome {
+                pid: 0,
+                shell_id: "openPath".into(),
+            });
+        }
+        "ssh" => {
+            return ssh_runner::run_ssh_macro(app, macro_, profile_name.as_deref());
+        }
+        _ => {}
+    }
+
+    let command = resolved_command(macro_, profile_name.as_deref());
+    if command.trim().is_empty() {
         return Err("Command is empty.".into());
     }
 
@@ -273,12 +338,16 @@ pub fn run_macro(app: &AppHandle, macro_: &Macro) -> Result<SpawnOutcome, String
         .as_ref()
         .filter(|c| std::path::Path::new(c).exists());
 
-    let args = shells::spawn_args(shell, &macro_.command);
+    let args = shells::spawn_args(shell, &command);
     let mut cmd = Command::new(&shell.executable);
     cmd.args(&args);
     if let Some(cwd) = cwd {
         cmd.current_dir(cwd);
     }
+    for (key, value) in &macro_.env {
+        cmd.env(key, value);
+    }
+    path_env::apply_enhanced_path(&mut cmd);
     cmd.stdin(Stdio::null());
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::piped());
@@ -300,7 +369,7 @@ pub fn run_macro(app: &AppHandle, macro_: &Macro) -> Result<SpawnOutcome, String
         shell: shell_id.clone(),
         show_terminal: macro_.show_terminal,
         name: macro_.name.clone(),
-        command: macro_.command.clone(),
+        command: command.clone(),
         started_at,
         stdout: String::new(),
         stderr: String::new(),
@@ -314,7 +383,7 @@ pub fn run_macro(app: &AppHandle, macro_: &Macro) -> Result<SpawnOutcome, String
 
     let running_payload = json!({
         "id": macro_.id, "status": "running", "pid": pid, "shell": shell_id,
-        "showTerminal": macro_.show_terminal, "name": macro_.name, "command": macro_.command,
+        "showTerminal": macro_.show_terminal, "name": macro_.name, "command": command,
         "startedAt": started_at
     });
     log_macro_status(app, &running_payload);
@@ -353,7 +422,6 @@ pub fn run_macro(app: &AppHandle, macro_: &Macro) -> Result<SpawnOutcome, String
     Ok(SpawnOutcome { pid, shell_id })
 }
 
-/// Request termination of a running macro's process tree.
 pub fn stop_macro(app: &AppHandle, id: &str) -> Value {
     let state = app.state::<AppState>();
     let entry = {
@@ -369,6 +437,11 @@ pub fn stop_macro(app: &AppHandle, id: &str) -> Value {
         e.stopping = true;
         e.pid
     };
+
+    if pid == 0 {
+        state.running.lock().remove(id);
+        return json!({ "ok": true });
+    }
 
     #[cfg(windows)]
     {
