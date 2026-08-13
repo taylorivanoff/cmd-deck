@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Manually bump package.json version, commit, and push.
+ * Manually bump version across package.json, Cargo.toml, and tauri.conf.json,
+ * then commit and push.
  * CI already auto patch-bumps on every master/main push; use this for
  * minor/major bumps, or when you want to set the version yourself.
  *
@@ -30,6 +31,22 @@ function runCapture(cmd) {
   return run(cmd, { silent: true }).trim();
 }
 
+function syncTauriVersion(version) {
+  const cargoPath = path.join(root, 'src-tauri', 'Cargo.toml');
+  if (fs.existsSync(cargoPath)) {
+    let cargo = fs.readFileSync(cargoPath, 'utf8');
+    cargo = cargo.replace(/^version = ".*"$/m, `version = "${version}"`);
+    fs.writeFileSync(cargoPath, cargo);
+  }
+
+  const confPath = path.join(root, 'src-tauri', 'tauri.conf.json');
+  if (fs.existsSync(confPath)) {
+    const conf = JSON.parse(fs.readFileSync(confPath, 'utf8'));
+    conf.version = version;
+    fs.writeFileSync(confPath, JSON.stringify(conf, null, 2) + '\n');
+  }
+}
+
 const branch = runCapture('git rev-parse --abbrev-ref HEAD');
 if (branch !== 'master' && branch !== 'main') {
   console.error(`Must be on master/main (currently on ${branch}).`);
@@ -54,8 +71,15 @@ const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 const oldVersion = pkg.version;
 run(`npm version ${level} --no-git-tag-version`);
 const newVersion = JSON.parse(fs.readFileSync(pkgPath, 'utf8')).version;
+syncTauriVersion(newVersion);
 
 const toAdd = ['package.json'];
+if (fs.existsSync(path.join(root, 'src-tauri', 'Cargo.toml'))) {
+  toAdd.push('src-tauri/Cargo.toml');
+}
+if (fs.existsSync(path.join(root, 'src-tauri', 'tauri.conf.json'))) {
+  toAdd.push('src-tauri/tauri.conf.json');
+}
 for (const lock of ['package-lock.json', 'bun.lock', 'bun.lockb', 'yarn.lock']) {
   if (fs.existsSync(path.join(root, lock))) toAdd.push(lock);
 }
