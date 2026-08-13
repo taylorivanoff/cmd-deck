@@ -1,6 +1,6 @@
 [package]
 name = "cmd-deck"
-version = "1.0.17"
+version = "1.0.18"
 description = "Always-on-top command deck for running terminal commands in the background."
 authors = ["Taylor Ivanoff"]
 edition = "2021"
