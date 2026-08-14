@@ -125,6 +125,26 @@ jobs:
         with:
           repository: taylorivanoff/tauri-tray-base
           path: tauri-tray-base
+      - name: Materialize shared-styles
+        shell: bash
+        run: |
+          mkdir -p shared-styles
+          cp app/renderer/vendor/shared-styles/*.css shared-styles/
+          cat > shared-styles/package.json <<'EOF'
+          {
+            "name": "@taylorivanoff/shared-styles",
+            "version": "0.0.0",
+            "files": ["tokens.css", "base.css", "window.css", "index.css"],
+            "exports": {
+              ".": "./index.css",
+              "./tokens.css": "./tokens.css",
+              "./base.css": "./base.css",
+              "./window.css": "./window.css",
+              "./index.css": "./index.css"
+            },
+            "style": "index.css"
+          }
+          EOF
       - name: Install Linux deps
         if: matrix.platform == 'ubuntu-latest'
         run: |
