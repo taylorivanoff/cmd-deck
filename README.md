@@ -1,23 +1,17 @@
-# CmdDeck - Macro Pad for Terminal Commands
+# CmdDeck - Software Macro Pad
 
 [![Release](https://img.shields.io/github/v/release/taylorivanoff/cmd-deck)](https://github.com/taylorivanoff/cmd-deck/releases)
 [![Downloads](https://img.shields.io/github/downloads/taylorivanoff/cmd-deck/total)](https://github.com/taylorivanoff/cmd-deck/releases)
 [![License](https://img.shields.io/github/license/taylorivanoff/cmd-deck)](LICENSE)
 
-**CmdDeck** is an open-source, cross-platform **Stream Deck-style command launcher** for Windows and macOS. Build an always-on-top button macro pad that runs shell commands, scripts, and terminal shortcuts, choosing which shell runs each command (PowerShell, cmd, pwsh, Git Bash, zsh, bash) and optionally attaching a console to monitor output.
+CmdDeck is an open-source, cross-platform Stream Deck-style command launcher for Windows and macOS. It features a software macro pad that runs commands, scripts, and terminal shortcuts. Choose which shell runs each command and optionally attach a console to monitor output.
 
-Ideal for developers or power users who want a lightweight **desktop command palette** / macro pad without dedicated hardware.
+Ideal for developers or power users who want a lightweight desktop command palette / macro pad without dedicated hardware.
+
+<img width="530" height="397" alt="{38C0ABE5-9C2B-4F4A-A63D-32A005CF6F86}" src="https://github.com/user-attachments/assets/9d8cfcb8-b504-490e-9b7e-64aad5545daf" />
 
 ## Features
 
-- Compact **always-on-top** command grid (toggleable)
-- Run short or multi-line shell commands in the background
-- **Run with** a selected shell so PATH/environment match that shell (e.g. tools available in PowerShell but not cmd)
-- Optional attached console per key to monitor output and cancel
-- Button face: custom image, display name, or command text fallback
-- Optional working directory per command
-- Tray icon with show/hide, always-on-top, start minimised, updates
-- Window bounds persistence, splash screen, single-instance, auto-updater
 - **Profiles and pages** — multiple decks with tabbed pages
 - **Macro packs** — import/export `.cmddeck-pack.json`; 7 built-in starter packs in `packs/`
 - **Global hotkeys** — optional shortcut per macro (e.g. `Ctrl+Shift+1`)
@@ -33,14 +27,6 @@ Ideal for developers or power users who want a lightweight **desktop command pal
 
 1. Download the latest installer from [Releases](https://github.com/taylorivanoff/cmd-deck/releases)
 2. Run the installer and follow the prompts
-
-### Linux
-
-1. Download the `.deb` or `.AppImage` from [Releases](https://github.com/taylorivanoff/cmd-deck/releases)
-2. **deb:** `sudo dpkg -i cmd-deck_*.deb`
-3. **AppImage:** `chmod +x CmdDeck_*.AppImage` then run it
-
-No udev rules are required — CmdDeck is a software-only macro pad.
 
 ### macOS
 
@@ -72,21 +58,7 @@ Bump the `version` in `package.json` and push to `master`. The GitHub Actions wo
 4. Click a button to run; click again while running to stop
 5. Right-click a button for Run / Edit / Duplicate / Delete
 
-### Screenshots
-
-Main command grid:
-
-![CmdDeck main window](docs/images/main-window.png)
-
-Macro editor:
-
-![CmdDeck macro editor](docs/images/edit-macro.png)
-
 ## Example macros
-
-Think in **workflows**, not one-off commands: each button should replace a ritual you repeat (start the day, ship a PR, prep a meeting). Set **Working directory** per macro when it matters. Use **Show terminal window** for anything long-running or that you need to watch.
-
-CmdDeck supports **multi-line** commands — paste a small script into the Command field.
 
 ### Developer workflows
 
@@ -162,15 +134,6 @@ lsof -ti:8000 | xargs kill 2>/dev/null
 php artisan serve
 ```
 
-Handy single-button companions (same cwd):
-
-| Button | Command | Notes |
-| --- | --- | --- |
-| Queue | `php artisan queue:work` | Show terminal |
-| Frontend | `npm run dev` | Show terminal |
-| Logs | `docker compose logs -f --tail=200` | Show terminal |
-| Open in editor | `code .` | Instant |
-
 ### Everyday workflows
 
 **Start workday** — open the tools you always need (Windows, PowerShell; edit URLs/apps):
@@ -240,13 +203,6 @@ Write-Host "Old Downloads cleaned."
 find ~/Downloads -type f -mtime +30 -delete
 echo "Old Downloads cleaned."
 ```
-
-## Notes
-
-- Detects installed shells from PATH / OS locations (`powershell`, `pwsh`, `cmd`, Git Bash, WSL, zsh, bash, fish, Nushell, and `/etc/shells` entries)
-- Defaults to PowerShell 7/Windows PowerShell on Windows, or `$SHELL` / zsh / bash on macOS/Linux
-- Commands run with a rebuilt login-like PATH (OS env + common tool bins) so GUI/IDE launches still find Herd, Scoop, Homebrew, nvm, etc.
-- Button images are embedded directly into the saved macro, so they stay available after you move or delete the originals
 
 ## Keywords
 
