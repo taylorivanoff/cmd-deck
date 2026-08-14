@@ -8,18 +8,17 @@ CmdDeck is an open-source, cross-platform Stream Deck-style command launcher for
 
 Ideal for developers or power users who want a lightweight desktop command palette / macro pad without dedicated hardware.
 
-<img width="530" height="397" alt="{38C0ABE5-9C2B-4F4A-A63D-32A005CF6F86}" src="https://github.com/user-attachments/assets/9d8cfcb8-b504-490e-9b7e-64aad5545daf" />
+<img width="627" height="387" alt="{E6010562-1913-4EF6-B6CD-2D4FDB1022D9}" src="https://github.com/user-attachments/assets/cbaa5d3c-934e-4990-b549-ec694c74c423" />
+
+<img width="894" height="697" alt="{8D3BE42E-B0BB-443D-AD48-1227F83534E7}" src="https://github.com/user-attachments/assets/ef449da2-2b0d-429d-be90-9e7e7956b58e" />
 
 ## Features
 
-- **Profiles and pages** — multiple decks with tabbed pages
-- **Macro packs** — import/export `.cmddeck-pack.json`; 7 built-in starter packs in `packs/`
-- **Global hotkeys** — optional shortcut per macro (e.g. `Ctrl+Shift+1`)
-- **Confirm before run** — safety prompt for destructive commands
-- **Workflow variables** — `{{date}}`, `{{cwd}}`, `{{env:VAR}}`, `{{gitBranch}}` in commands
-- **SSH remote macros** — run commands on remote hosts over SSH
-- **LAN web remote** — control the deck from a phone on the same Wi‑Fi
-- **Action types** — run command, open URL, open path, or SSH
+- **Profiles and pages** - multiple decks with tabbed pages
+- **Macro packs** - import/export macro packs; import example packs in Settings
+- **Global hotkeys** - optional shortcut per macro (e.g. `Ctrl+Shift+1`)
+- **Workflow variables** - `{{date}}`, `{{cwd}}`, `{{env:VAR}}`, `{{gitBranch}}` in commands
+- **Macro actions** — run command, open URL, open path, or SSH, and more!
 
 ## Installation
 
