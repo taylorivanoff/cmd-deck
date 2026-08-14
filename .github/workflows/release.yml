@@ -3,13 +3,14 @@ name: Release
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   check-version:
-    if: "!startsWith(github.event.head_commit.message, 'chore: bump version')"
+    if: ${{ github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore: bump version') }}
     runs-on: ubuntu-latest
     outputs:
       should_release: ${{ steps.check.outputs.should_release }}
@@ -23,6 +24,16 @@ jobs:
       - id: check
         run: |
           set -e
+
+          # Manual re-run: build current version without bumping
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            CURRENT=$(jq -r .version package.json)
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "version=${CURRENT}" >> "$GITHUB_OUTPUT"
+            echo "ref=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
             CHANGED=$(git diff --name-only HEAD^ HEAD)
           else
@@ -114,6 +125,11 @@ jobs:
         with:
           repository: taylorivanoff/tauri-tray-base
           path: tauri-tray-base
+      - name: Install Linux deps
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - uses: dtolnay/rust-toolchain@stable
       - uses: oven-sh/setup-bun@v2
       - name: Install frontend deps
