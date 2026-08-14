@@ -14,7 +14,7 @@ fn default_columns() -> u32 {
 }
 
 fn default_rows() -> u32 {
-    1
+    2
 }
 
 fn default_version() -> u32 {

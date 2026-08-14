@@ -3,11 +3,14 @@
   const settingMinimised = document.getElementById('setting-minimised');
   const settingOpacity = document.getElementById('setting-opacity');
   const settingOpacityOut = document.getElementById('setting-opacity-out');
-  const settingLan = document.getElementById('setting-lan');
-  const settingLanPort = document.getElementById('setting-lan-port');
-  const lanUrl = document.getElementById('lan-url');
   const packSelect = document.getElementById('pack-select');
   const settingsMeta = document.getElementById('settings-meta');
+  const sheet = document.querySelector('.dialog-sheet');
+
+  let lastFitW = 0;
+  let lastFitH = 0;
+  let revealed = false;
+  let fitTimer = null;
 
   function opacityToTransparencyPercent(opacity) {
     return Math.round((1 - Math.min(1, Math.max(0.35, Number(opacity) || 0.94))) * 100);
@@ -21,23 +24,72 @@
     settingOpacityOut.textContent = `${settingOpacity.value}%`;
   }
 
-  async function syncLanUrl() {
-    const info = await window.cmdDeck.getLanInfo();
-    if (!info.enabled) {
-      lanUrl.textContent = 'Remote disabled';
-      return;
-    }
-    lanUrl.textContent = `Open http://<your-ip>:${info.port}/?token=${info.token} on your phone (same Wi‑Fi)`;
+  function currentWindow() {
+    const t = window.__TAURI__;
+    if (!t) return null;
+    const get =
+      t.webviewWindow?.getCurrentWebviewWindow ||
+      t.window?.getCurrentWindow;
+    return get ? get() : null;
   }
 
-  function applySettings(settings) {
+  async function fitWindowToContent() {
+    if (!sheet) return;
+    const width = Math.max(320, Math.ceil(sheet.getBoundingClientRect().width) || 340);
+    const height = Math.max(200, Math.ceil(sheet.scrollHeight));
+    const sizeChanged = width !== lastFitW || height !== lastFitH;
+    lastFitW = width;
+    lastFitH = height;
+
+    const t = window.__TAURI__;
+    const win = currentWindow();
+    const LogicalSize = t?.dpi?.LogicalSize || t?.window?.LogicalSize;
+
+    try {
+      if (sizeChanged) {
+        if (win && LogicalSize) {
+          const size = new LogicalSize(width, height);
+          await win.setSize(size);
+          if (typeof win.setMinSize === 'function') await win.setMinSize(size);
+        } else if (t?.core?.invoke) {
+          const label = win?.label || 'settings';
+          const value = { Logical: { width, height } };
+          await t.core.invoke('plugin:window|set_size', { label, value });
+          await t.core.invoke('plugin:window|set_min_size', { label, value });
+        }
+      }
+
+      if (!revealed && win) {
+        if (typeof win.show === 'function') await win.show();
+        if (typeof win.unminimize === 'function') await win.unminimize();
+        if (typeof win.setFocus === 'function') await win.setFocus();
+        revealed = true;
+      }
+    } catch (err) {
+      console.error('Failed to fit settings window', err);
+      if (!revealed && win?.show) {
+        try {
+          await win.show();
+          revealed = true;
+        } catch (_) { /* ignore */ }
+      }
+    }
+  }
+
+  function scheduleFit() {
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(() => {
+      requestAnimationFrame(() => {
+        fitWindowToContent().catch((err) => console.error(err));
+      });
+    }, 16);
+  }
+
+  async function applySettings(settings) {
     settingAot.checked = !!settings.alwaysOnTop;
     settingMinimised.checked = !!settings.startMinimised;
     settingOpacity.value = String(opacityToTransparencyPercent(settings.opacity));
-    settingLan.checked = !!settings.lanWebEnabled;
-    settingLanPort.value = String(settings.lanWebPort || 8742);
     syncOpacityOutput();
-    syncLanUrl();
   }
 
   async function loadPacks() {
@@ -56,12 +108,20 @@
     document.body.classList.add(`platform-${state.platform || 'win32'}`);
     if (state.dark) document.body.classList.add('dark');
     settingsMeta.textContent = `CmdDeck v${state.version || '1.0.0'} · ${state.platform}`;
-    applySettings(state.settings || {});
+    await applySettings(state.settings || {});
     await loadPacks();
+    await fitWindowToContent();
 
     window.cmdDeck.onSettingsChanged((next) => {
-      if (next) applySettings(next);
+      if (!next) return;
+      applySettings(next);
+      scheduleFit();
     });
+
+    if (sheet && typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => scheduleFit());
+      ro.observe(sheet);
+    }
   }
 
   settingAot.addEventListener('change', () => {
@@ -73,14 +133,6 @@
   settingOpacity.addEventListener('input', () => {
     syncOpacityOutput();
     window.cmdDeck.setSettings({ opacity: transparencyPercentToOpacity(settingOpacity.value) });
-  });
-  settingLan.addEventListener('change', async () => {
-    await window.cmdDeck.setSettings({ lanWebEnabled: settingLan.checked });
-    syncLanUrl();
-  });
-  settingLanPort.addEventListener('change', async () => {
-    await window.cmdDeck.setSettings({ lanWebPort: Number(settingLanPort.value) || 8742 });
-    syncLanUrl();
   });
 
   document.getElementById('btn-open-log').addEventListener('click', () => {

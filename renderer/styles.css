@@ -93,15 +93,16 @@ body.platform-win32 {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .titlebar-drag {
   flex: 1;
   height: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   -webkit-app-region: drag;
-  min-width: 0;
 }
 
 body.platform-darwin .titlebar-drag {
@@ -132,10 +133,12 @@ body.platform-darwin .app-title {
   margin-left: 8px;
   min-width: 0;
   flex: 1;
+  overflow: hidden;
   -webkit-app-region: no-drag;
 }
 
 .deck-select {
+  flex: 0 0 auto;
   max-width: 120px;
   font-size: 10px;
   height: 22px;
@@ -146,34 +149,89 @@ body.platform-darwin .app-title {
   padding: 0 4px;
 }
 
-.page-tabs {
+.page-switcher {
   display: flex;
-  gap: 4px;
-  overflow-x: auto;
+  align-items: center;
+  gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 
-.page-tab {
-  font-size: 10px;
+.page-select {
+  flex: 1 1 72px;
+  min-width: 56px;
+  max-width: 120px;
+}
+
+.page-step {
+  width: 18px;
   height: 22px;
-  padding: 0 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  line-height: 0;
+}
+
+.page-step:hover:not(:disabled) {
+  background: var(--bg-button);
+  color: var(--text);
+}
+
+.page-step:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.page-add {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--bg-button);
   color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
-  white-space: nowrap;
+  padding: 0;
 }
 
-.page-tab.is-active {
+.page-add:hover {
   color: var(--text);
   border-color: var(--accent);
 }
 
-.page-tab-add {
+.page-delete {
   width: 22px;
-  padding: 0;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-button);
+  color: var(--text-secondary);
+  font-size: 14px;
   font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.page-delete:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
+  background: color-mix(in srgb, var(--danger) 10%, var(--bg-button));
+}
+
+.page-delete:disabled {
+  opacity: 0.28;
+  cursor: default;
 }
 
 
@@ -181,6 +239,7 @@ body.platform-darwin .app-title {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
   -webkit-app-region: no-drag;
 }
 
@@ -500,6 +559,12 @@ body.dialog-page.platform-darwin {
   background: var(--bg);
 }
 
+html:has(body.settings-page),
+body.settings-page {
+  height: auto;
+  overflow: hidden;
+}
+
 .dialog-sheet {
   height: 100%;
   min-height: 100%;
@@ -512,8 +577,10 @@ body.dialog-page.platform-darwin {
 }
 
 .dialog-sheet.compact {
+  height: auto;
+  min-height: 0;
   gap: 10px;
-  overflow: auto;
+  overflow: visible;
 }
 
 .sheet-body {
@@ -942,6 +1009,172 @@ body.dialog-page.platform-darwin {
   font-size: 11px;
   color: var(--text-secondary);
   padding-top: 4px;
+}
+
+/* —— Settings (minimal flat list) —— */
+.settings-sheet {
+  width: 340px;
+  height: auto;
+  min-height: 0;
+  gap: 0;
+  padding: 10px 12px 12px;
+  overflow: visible;
+}
+
+.settings-block {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-block:first-child {
+  padding-top: 2px;
+}
+
+.settings-block-end {
+  border-bottom: none;
+  padding-bottom: 0;
+  gap: 8px;
+}
+
+.settings-label {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 28px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.settings-row + .settings-row {
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.settings-row input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.settings-row-slider {
+  cursor: default;
+  gap: 8px;
+}
+
+.settings-row-slider input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.settings-row-slider output {
+  min-width: 2.4em;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.settings-port {
+  width: 68px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  padding: 0 6px;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.settings-port:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.settings-btn-row {
+  display: flex;
+  gap: 6px;
+}
+
+.settings-btn-row .btn {
+  flex: 1;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.settings-pack-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  align-items: center;
+}
+
+.settings-pack-row select {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  padding: 0 6px;
+  outline: none;
+  cursor: pointer;
+}
+
+.settings-pack-row select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.settings-pack-row .btn {
+  flex: 0 0 auto;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+.settings-hint {
+  margin: 4px 0 0;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.settings-meta {
+  margin: 0;
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.8;
 }
 
 .toast {

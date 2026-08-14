@@ -10,49 +10,44 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 
-<body class="dialog-page">
-  <div class="dialog-sheet compact">
-    <label class="toggle-row">
-      <span>Always on top</span>
-      <input type="checkbox" id="setting-aot" />
-    </label>
-    <label class="toggle-row">
-      <span>Start minimised</span>
-      <input type="checkbox" id="setting-minimised" />
-    </label>
-    <label class="field">
-      <span>Transparency</span>
-      <input type="range" id="setting-opacity" min="0" max="65" step="1" />
-      <output id="setting-opacity-out">6%</output>
-    </label>
+<body class="dialog-page settings-page">
+  <div class="dialog-sheet settings-sheet">
+    <section class="settings-block">
+      <h2 class="settings-label">Window</h2>
+      <label class="settings-row">
+        <span>Always on top</span>
+        <input type="checkbox" id="setting-aot" />
+      </label>
+      <label class="settings-row">
+        <span>Start minimised</span>
+        <input type="checkbox" id="setting-minimised" />
+      </label>
+      <label class="settings-row settings-row-slider">
+        <span>Transparency</span>
+        <input type="range" id="setting-opacity" min="0" max="65" step="1" />
+        <output id="setting-opacity-out">6%</output>
+      </label>
+    </section>
 
-    <h2 class="settings-section">Macro packs</h2>
-    <div class="settings-actions">
-      <button type="button" class="btn" id="btn-import-pack">Import pack…</button>
-      <button type="button" class="btn" id="btn-export-pack">Export profile</button>
-    </div>
-    <label class="field">
-      <span>Built-in packs</span>
-      <select id="pack-select"></select>
-      <button type="button" class="btn" id="btn-install-pack">Install selected</button>
-    </label>
+    <section class="settings-block">
+      <h2 class="settings-label">Macro packs</h2>
+      <div class="settings-btn-row">
+        <button type="button" class="btn" id="btn-import-pack">Import…</button>
+        <button type="button" class="btn" id="btn-export-pack">Export</button>
+      </div>
+      <div class="settings-pack-row">
+        <select id="pack-select" aria-label="Built-in packs"></select>
+        <button type="button" class="btn" id="btn-install-pack">Install</button>
+      </div>
+    </section>
 
-    <h2 class="settings-section">LAN remote</h2>
-    <label class="toggle-row">
-      <span>Enable phone/tablet remote</span>
-      <input type="checkbox" id="setting-lan" />
-    </label>
-    <label class="field">
-      <span>Port</span>
-      <input type="number" id="setting-lan-port" min="1024" max="65535" value="8742" />
-    </label>
-    <p class="meta" id="lan-url"></p>
-
-    <div class="settings-actions">
-      <button type="button" class="btn" id="btn-add-profile">New profile</button>
-      <button type="button" class="btn" id="btn-open-log">Activity log</button>
-    </div>
-    <p class="meta" id="settings-meta"></p>
+    <section class="settings-block settings-block-end">
+      <div class="settings-btn-row">
+        <button type="button" class="btn" id="btn-add-profile">New profile</button>
+        <button type="button" class="btn" id="btn-open-log">Activity log</button>
+      </div>
+      <p class="settings-meta" id="settings-meta"></p>
+    </section>
   </div>
 
   <script src="vendor/tauri-tray-bridge.js"></script>

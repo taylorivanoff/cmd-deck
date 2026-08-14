@@ -25,6 +25,7 @@
     setActivePage: (pageId) => invoke("deck_set_active_page", { pageId }),
     addProfile: (name) => invoke("deck_add_profile", { name }),
     addPage: (name) => invoke("deck_add_page", { name }),
+    deletePage: (pageId) => invoke("deck_delete_page", { pageId }),
     duplicateProfile: (profileId) => invoke("deck_duplicate_profile", { profileId }),
     listPacks: () => invoke("packs_list"),
     exportPack: (profileId) => invoke("packs_export", { profileId: profileId || null }),

@@ -68,7 +68,7 @@ pub fn settings_set(
         let rows = partial
             .get("rows")
             .and_then(|v| v.as_u64())
-            .unwrap_or(1) as u32;
+            .unwrap_or(2) as u32;
         let app_state = app.state::<AppState>();
         store::update_profile_grid(&app_state, cols, rows);
         store::broadcast_deck(&app, &app_state);
@@ -166,6 +166,16 @@ pub fn deck_add_page(app: AppHandle, state: State<'_, AppState>, name: String) -
     match store::add_page(&state, &name) {
         Some(_) => store::broadcast_deck(&app, &state),
         None => json!({ "ok": false }),
+    }
+}
+
+#[tauri::command]
+pub fn deck_delete_page(app: AppHandle, state: State<'_, AppState>, page_id: String) -> Value {
+    if store::delete_page(&state, &page_id) {
+        let _ = hotkeys::sync_hotkeys(&app);
+        store::broadcast_deck(&app, &state)
+    } else {
+        json!({ "ok": false, "error": "Cannot delete the last page" })
     }
 }
 

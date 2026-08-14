@@ -14,10 +14,19 @@
   <div class="app">
     <header class="titlebar">
       <div class="titlebar-drag">
-        <h1 class="app-title">CmdDeck</h1>
         <div class="deck-nav">
           <select id="profile-select" class="deck-select" title="Profile" aria-label="Profile"></select>
-          <div class="page-tabs" id="page-tabs" role="tablist"></div>
+          <div class="page-switcher" role="group" aria-label="Pages">
+            <button type="button" class="page-step" id="btn-page-prev" title="Previous page" aria-label="Previous page">
+              <svg viewBox="0 0 8 12" width="7" height="10" aria-hidden="true"><path fill="currentColor" d="M5.6 1.2 1.2 6l4.4 4.8.9-.85L3.05 6 6.5 2.05z"/></svg>
+            </button>
+            <select id="page-select" class="deck-select page-select" title="Page" aria-label="Page"></select>
+            <button type="button" class="page-step" id="btn-page-next" title="Next page" aria-label="Next page">
+              <svg viewBox="0 0 8 12" width="7" height="10" aria-hidden="true"><path fill="currentColor" d="M2.4 1.2 6.8 6l-4.4 4.8-.9-.85L4.95 6 1.5 2.05z"/></svg>
+            </button>
+            <button type="button" class="page-add" id="btn-add-page" title="Add page" aria-label="Add page">+</button>
+            <button type="button" class="page-delete" id="btn-delete-page" title="Delete page" aria-label="Delete page" disabled>−</button>
+          </div>
         </div>
       </div>
       <div class="titlebar-actions">
@@ -37,7 +46,7 @@
           <span class="grid-sep" aria-hidden="true">×</span>
           <div class="grid-stepper" data-key="rows" data-min="1" data-max="32">
             <span class="grid-label">Rows</span>
-            <input type="text" class="grid-value" id="setting-rows" inputmode="numeric" maxlength="2" aria-label="Rows" value="1" />
+            <input type="text" class="grid-value" id="setting-rows" inputmode="numeric" maxlength="2" aria-label="Rows" value="2" />
             <div class="grid-arrows">
               <button type="button" class="grid-arrow" data-dir="1" aria-label="Increase rows" title="Increase">
                 <svg viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path fill="currentColor" d="M6 1.2 10.8 6H1.2z"/></svg>

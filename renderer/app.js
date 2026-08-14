@@ -8,9 +8,13 @@
 
   let macros = [];
   let deck = { profiles: [], activeProfileId: '', activeProfile: null, activePage: null };
-  let settings = { columns: 3, rows: 1, opacity: 0.94, alwaysOnTop: true, startMinimised: false, sizeLocked: false };
+  let settings = { columns: 3, rows: 2, opacity: 0.94, alwaysOnTop: true, startMinimised: false, sizeLocked: false };
   const profileSelect = document.getElementById('profile-select');
-  const pageTabs = document.getElementById('page-tabs');
+  const pageSelect = document.getElementById('page-select');
+  const btnPagePrev = document.getElementById('btn-page-prev');
+  const btnPageNext = document.getElementById('btn-page-next');
+  const btnAddPage = document.getElementById('btn-add-page');
+  const btnDeletePage = document.getElementById('btn-delete-page');
   const btnLock = document.getElementById('btn-lock');
   let running = new Set();
   let flash = new Map();
@@ -57,8 +61,28 @@
     render();
   }
 
+  function profilePages() {
+    return deck.activeProfile?.pages || [];
+  }
+
+  function adjacentPageId(dir) {
+    const pages = profilePages();
+    if (pages.length < 2) return null;
+    const activeId = deck.activeProfile.activePageId;
+    const index = pages.findIndex((page) => page.id === activeId);
+    const from = index < 0 ? 0 : index;
+    const next = (from + dir + pages.length) % pages.length;
+    return pages[next].id;
+  }
+
+  async function goToAdjacentPage(dir) {
+    const pageId = adjacentPageId(dir);
+    if (!pageId || pageId === deck.activeProfile?.activePageId) return;
+    await window.cmdDeck.setActivePage(pageId);
+  }
+
   function renderDeckNav() {
-    if (!profileSelect || !pageTabs) return;
+    if (!profileSelect || !pageSelect) return;
     profileSelect.innerHTML = '';
     for (const profile of deck.profiles || []) {
       const opt = document.createElement('option');
@@ -67,35 +91,28 @@
       opt.selected = profile.id === deck.activeProfileId;
       profileSelect.appendChild(opt);
     }
-    pageTabs.innerHTML = '';
+
     const profile = deck.activeProfile;
-    if (!profile) return;
-    for (const page of profile.pages || []) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'page-tab' + (page.id === profile.activePageId ? ' is-active' : '');
-      btn.textContent = page.name || 'Page';
-      btn.setAttribute('role', 'tab');
-      btn.addEventListener('click', async () => {
-        if (page.id === profile.activePageId) return;
-        await window.cmdDeck.setActivePage(page.id);
-      });
-      pageTabs.appendChild(btn);
+    const pages = profile?.pages || [];
+    pageSelect.innerHTML = '';
+    for (const page of pages) {
+      const opt = document.createElement('option');
+      opt.value = page.id;
+      opt.textContent = page.name || 'Page';
+      opt.selected = page.id === profile.activePageId;
+      pageSelect.appendChild(opt);
     }
-    const addPage = document.createElement('button');
-    addPage.type = 'button';
-    addPage.className = 'page-tab page-tab-add';
-    addPage.textContent = '+';
-    addPage.title = 'Add page';
-    addPage.addEventListener('click', async () => {
-      await window.cmdDeck.addPage('');
-    });
-    pageTabs.appendChild(addPage);
+    pageSelect.disabled = pages.length === 0;
+
+    const canStep = pages.length > 1;
+    if (btnPagePrev) btnPagePrev.disabled = !canStep;
+    if (btnPageNext) btnPageNext.disabled = !canStep;
+    if (btnDeletePage) btnDeletePage.disabled = !canStep;
   }
 
   function applyLayout() {
     pad.style.setProperty('--columns', String(settings.columns || 3));
-    pad.style.setProperty('--rows', String(settings.rows || 1));
+    pad.style.setProperty('--rows', String(settings.rows || 2));
   }
 
   function syncLockButton() {
@@ -108,7 +125,7 @@
 
   function syncGridInputs() {
     const cols = settings.columns || 3;
-    const rows = settings.rows || 1;
+    const rows = settings.rows || 2;
     if (document.activeElement !== settingColumns) settingColumns.value = String(cols);
     if (document.activeElement !== settingRows) settingRows.value = String(rows);
 
@@ -131,7 +148,7 @@
   }
 
   async function commitGridSetting(key, input, min, max) {
-    const fallback = key === 'rows' ? 1 : 3;
+    const fallback = key === 'rows' ? 2 : 3;
     const next = clampInt(input.value, min, max, settings[key] || fallback);
     input.value = String(next);
     if (settings[key] === next) {
@@ -145,7 +162,7 @@
   }
 
   async function nudgeGridSetting(key, delta, min, max) {
-    const fallback = key === 'rows' ? 1 : 3;
+    const fallback = key === 'rows' ? 2 : 3;
     const current = settings[key] || fallback;
     const next = Math.min(max, Math.max(min, current + delta));
     if (next === current) return;
@@ -457,6 +474,49 @@
   if (profileSelect) {
     profileSelect.addEventListener('change', async () => {
       await window.cmdDeck.setActiveProfile(profileSelect.value);
+    });
+  }
+
+  if (pageSelect) {
+    pageSelect.addEventListener('change', async () => {
+      if (!pageSelect.value) return;
+      await window.cmdDeck.setActivePage(pageSelect.value);
+    });
+  }
+
+  if (btnPagePrev) {
+    btnPagePrev.addEventListener('click', () => {
+      goToAdjacentPage(-1).catch((err) => console.error(err));
+    });
+  }
+
+  if (btnPageNext) {
+    btnPageNext.addEventListener('click', () => {
+      goToAdjacentPage(1).catch((err) => console.error(err));
+    });
+  }
+
+  if (btnAddPage) {
+    btnAddPage.addEventListener('click', async () => {
+      await window.cmdDeck.addPage('');
+    });
+  }
+
+  if (btnDeletePage) {
+    btnDeletePage.addEventListener('click', async () => {
+      const pages = profilePages();
+      if (pages.length <= 1) return;
+      const page =
+        pages.find((p) => p.id === deck.activeProfile?.activePageId) || pages[0];
+      const name = page?.name || 'this page';
+      const count = page?.macroIds?.length || page?.macro_ids?.length || 0;
+      const detail =
+        count > 0
+          ? ` Delete "${name}" and its ${count} macro${count === 1 ? '' : 's'}?`
+          : ` Delete "${name}"?`;
+      if (!confirm(detail.trim())) return;
+      const result = await window.cmdDeck.deletePage(page.id);
+      if (result?.error) showToast(result.error, true);
     });
   }
 

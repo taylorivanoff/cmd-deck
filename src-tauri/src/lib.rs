@@ -41,6 +41,7 @@ pub fn run() {
             commands::deck_set_active_page,
             commands::deck_add_profile,
             commands::deck_add_page,
+            commands::deck_delete_page,
             commands::deck_duplicate_profile,
             commands::packs_list,
             commands::packs_export,
@@ -76,7 +77,7 @@ pub fn run() {
             defaults.insert("alwaysOnTop".into(), json!(true));
             defaults.insert("startMinimised".into(), json!(false));
             defaults.insert("columns".into(), json!(3));
-            defaults.insert("rows".into(), json!(1));
+            defaults.insert("rows".into(), json!(2));
             defaults.insert("sizeLocked".into(), json!(false));
             defaults.insert("lanWebEnabled".into(), json!(false));
             defaults.insert("lanWebPort".into(), json!(8742));

@@ -34,7 +34,7 @@ pub fn migrate_from_legacy(raw: &str) -> DeckStore {
                 id: profile_id,
                 name: "Default".into(),
                 columns: 3,
-                rows: 1,
+                rows: 2,
                 active_page_id: page_id.clone(),
                 pages: vec![Page {
                     id: page_id,
@@ -58,7 +58,7 @@ pub fn migrate_from_legacy(raw: &str) -> DeckStore {
             id: profile_id,
             name: "Default".into(),
             columns: 3,
-            rows: 1,
+            rows: 2,
             active_page_id: page_id.clone(),
             pages: vec![Page {
                 id: page_id,
@@ -83,7 +83,7 @@ pub fn load_deck(path: &Path) -> DeckStore {
             id: profile_id,
             name: "Default".into(),
             columns: 3,
-            rows: 1,
+            rows: 2,
             active_page_id: page_id.clone(),
             pages: vec![Page {
                 id: page_id,
@@ -393,6 +393,50 @@ pub fn add_page(state: &AppState, name: &str) -> Option<Page> {
     Some(page)
 }
 
+/// Removes a page from the active profile. Refuses to delete the last page.
+/// Macros that are no longer referenced by any page are removed.
+pub fn delete_page(state: &AppState, page_id: &str) -> bool {
+    let mut deck = state.deck.lock();
+    let active_profile_id = deck.active_profile_id.clone();
+    let Some(profile_index) = deck.profiles.iter().position(|p| p.id == active_profile_id) else {
+        return false;
+    };
+    if deck.profiles[profile_index].pages.len() <= 1 {
+        return false;
+    }
+    let Some(index) = deck.profiles[profile_index]
+        .pages
+        .iter()
+        .position(|p| p.id == page_id)
+    else {
+        return false;
+    };
+    let removed = deck.profiles[profile_index].pages.remove(index);
+    if deck.profiles[profile_index].active_page_id == page_id {
+        let fallback = index.min(deck.profiles[profile_index].pages.len() - 1);
+        deck.profiles[profile_index].active_page_id =
+            deck.profiles[profile_index].pages[fallback].id.clone();
+    }
+
+    let orphaned: Vec<String> = removed
+        .macro_ids
+        .into_iter()
+        .filter(|mid| {
+            !deck.profiles.iter().any(|p| {
+                p.pages
+                    .iter()
+                    .any(|page| page.macro_ids.iter().any(|id| id == mid))
+            })
+        })
+        .collect();
+    if !orphaned.is_empty() {
+        deck.macros.retain(|m| !orphaned.iter().any(|id| id == &m.id));
+    }
+
+    save_deck(&state.deck_path, &deck);
+    true
+}
+
 pub fn add_profile(state: &AppState, name: &str) -> Option<Profile> {
     let mut deck = state.deck.lock();
     let profile_id = new_id();
@@ -405,7 +449,7 @@ pub fn add_profile(state: &AppState, name: &str) -> Option<Profile> {
             name.to_string()
         },
         columns: 3,
-        rows: 1,
+        rows: 2,
         active_page_id: page_id.clone(),
         pages: vec![Page {
             id: page_id,

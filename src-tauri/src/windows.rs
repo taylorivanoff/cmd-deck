@@ -130,18 +130,19 @@ pub fn open_settings_window(app: &AppHandle) {
 
     let aot = current_always_on_top(app);
     let bg = dialog_background(app);
+    // Stay hidden until settings.js measures content and shows — avoids a
+    // flash of the placeholder size, then a jump.
     spawn_window(app.clone(), move |app| {
         let _ = WebviewWindowBuilder::new(app, SETTINGS_LABEL, WebviewUrl::App("settings.html".into()))
             .title("Settings")
-            .inner_size(360.0, 320.0)
-            .min_inner_size(300.0, 280.0)
+            .inner_size(340.0, 420.0)
+            .min_inner_size(300.0, 200.0)
             .resizable(false)
             .minimizable(false)
             .maximizable(false)
             .always_on_top(aot)
             .background_color(bg)
             .visible(false)
-            .on_page_load(reveal_when_ready(true))
             .center()
             .build();
     });
