@@ -8,15 +8,9 @@
   const fieldCwd = document.getElementById('field-cwd');
   const fieldTerminal = document.getElementById('field-terminal');
   const fieldShell = document.getElementById('field-shell');
-  const fieldActionType = document.getElementById('field-action-type');
   const fieldShortcut = document.getElementById('field-shortcut');
   const fieldConfirm = document.getElementById('field-confirm');
   const fieldConfirmMsg = document.getElementById('field-confirm-msg');
-  const sshFields = document.getElementById('ssh-fields');
-  const fieldSshHost = document.getElementById('field-ssh-host');
-  const fieldSshUser = document.getElementById('field-ssh-user');
-  const fieldSshKey = document.getElementById('field-ssh-key');
-  const fieldSshPort = document.getElementById('field-ssh-port');
   const shellPicker = document.getElementById('shell-picker');
   const shellPickerTrigger = document.getElementById('shell-picker-trigger');
   const shellPickerMenu = document.getElementById('shell-picker-menu');
@@ -253,11 +247,6 @@
     syncEditorChrome();
   }
 
-  function syncActionFields() {
-    const isSsh = fieldActionType.value === 'ssh';
-    sshFields.classList.toggle('hidden', !isSsh);
-  }
-
   async function saveEditor(event) {
     if (event) event.preventDefault();
     const payload = {
@@ -267,14 +256,10 @@
       imagePath: draftImagePath,
       showTerminal: fieldTerminal.checked,
       shell: fieldShell.value || defaultShell,
-      actionType: fieldActionType.value || 'runCommand',
+      actionType: 'runCommand',
       shortcut: fieldShortcut.value.trim() || null,
       confirmBeforeRun: fieldConfirm.checked,
       confirmMessage: fieldConfirmMsg.value.trim() || null,
-      sshHost: fieldSshHost.value.trim() || null,
-      sshUser: fieldSshUser.value.trim() || null,
-      sshKeyPath: fieldSshKey.value.trim() || null,
-      sshPort: fieldSshPort.value ? Number(fieldSshPort.value) : null,
     };
     if (!payload.command.trim()) {
       showToast('Command is required', true);
@@ -346,15 +331,9 @@
     fieldName.value = macro?.name || '';
     fieldCwd.value = macro?.cwd || '';
     fieldTerminal.checked = !!macro?.showTerminal;
-    fieldActionType.value = macro?.actionType || 'runCommand';
     fieldShortcut.value = macro?.shortcut || '';
     fieldConfirm.checked = !!macro?.confirmBeforeRun;
     fieldConfirmMsg.value = macro?.confirmMessage || '';
-    fieldSshHost.value = macro?.sshHost || '';
-    fieldSshUser.value = macro?.sshUser || '';
-    fieldSshKey.value = macro?.sshKeyPath || '';
-    fieldSshPort.value = macro?.sshPort || '';
-    syncActionFields();
     populateShellOptions(macro?.shell || macro?.terminalApp || defaultShell);
     setImagePreview(macro?.imagePath || null);
     btnDelete.classList.toggle('hidden', !editingId);
@@ -408,8 +387,6 @@
       // keep default newline; status updates on input
     }
   });
-
-  fieldActionType.addEventListener('change', syncActionFields);
 
   shellPickerTrigger.addEventListener('click', () => {
     if (shellPicker.classList.contains('is-open')) closeShellPicker();

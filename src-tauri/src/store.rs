@@ -658,39 +658,62 @@ pub fn import_pack(state: &AppState, pack: &Value, mode: &str) -> Result<Value, 
 
 pub fn list_builtin_packs(app: &AppHandle) -> Value {
     let mut packs = Vec::new();
-    let mut dirs: Vec<std::path::PathBuf> = vec![
-        Path::new("packs").into(),
-        Path::new("../packs").into(),
-    ];
-    if let Ok(res) = app.path().resource_dir() {
-        dirs.push(res.join("packs"));
-    }
+    let mut seen = std::collections::HashSet::new();
+    // Prefer app-data overrides, then bundled resources, then repo-relative (dev).
+    let mut dirs: Vec<std::path::PathBuf> = Vec::new();
     if let Ok(data) = app.path().app_data_dir() {
         dirs.push(data.join("packs"));
     }
+    if let Ok(res) = app.path().resource_dir() {
+        dirs.push(res.join("packs"));
+    }
+    dirs.push(Path::new("packs").into());
+    dirs.push(Path::new("../packs").into());
+
     for dir in dirs {
         if !dir.is_dir() {
             continue;
         }
-        if let Ok(entries) = std::fs::read_dir(dir) {
+        if let Ok(entries) = std::fs::read_dir(&dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.extension().and_then(|e| e.to_str()) != Some("json") {
                     continue;
                 }
+                let id = path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_string();
+                if id.is_empty() || !seen.insert(id.clone()) {
+                    continue;
+                }
                 if let Ok(raw) = std::fs::read_to_string(&path) {
                     if let Ok(pack) = serde_json::from_str::<Value>(&raw) {
+                        if pack.get("schemaVersion").is_none() && pack.get("macros").is_none() {
+                            seen.remove(&id);
+                            continue;
+                        }
                         packs.push(json!({
-                            "id": path.file_stem().and_then(|s| s.to_str()).unwrap_or(""),
+                            "id": id,
                             "name": pack.get("name").and_then(|v| v.as_str()).unwrap_or("Pack"),
                             "description": pack.get("description").and_then(|v| v.as_str()).unwrap_or(""),
                             "path": path.to_string_lossy(),
                         }));
+                    } else {
+                        seen.remove(&id);
                     }
+                } else {
+                    seen.remove(&id);
                 }
             }
         }
     }
+    packs.sort_by(|a, b| {
+        let an = a.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        let bn = b.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        an.cmp(bn)
+    });
     json!(packs)
 }
 

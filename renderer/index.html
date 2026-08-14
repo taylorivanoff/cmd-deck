@@ -7,13 +7,24 @@
     content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CmdDeck</title>
+  <link rel="stylesheet" href="vendor/shared-styles/index.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
-  <div class="app">
+  <div class="app window-shell">
     <header class="titlebar">
       <div class="titlebar-drag">
+        <span class="drag-handle" title="Drag to move" aria-hidden="true">
+          <svg viewBox="0 0 8 12" width="8" height="12" aria-hidden="true">
+            <circle cx="2" cy="2" r="1.1" fill="currentColor" />
+            <circle cx="6" cy="2" r="1.1" fill="currentColor" />
+            <circle cx="2" cy="6" r="1.1" fill="currentColor" />
+            <circle cx="6" cy="6" r="1.1" fill="currentColor" />
+            <circle cx="2" cy="10" r="1.1" fill="currentColor" />
+            <circle cx="6" cy="10" r="1.1" fill="currentColor" />
+          </svg>
+        </span>
         <div class="deck-nav">
           <select id="profile-select" class="deck-select" title="Profile" aria-label="Profile"></select>
           <div class="page-switcher" role="group" aria-label="Pages">
@@ -79,6 +90,14 @@
           </svg>
         </button>
       </div>
+      <div class="window-controls" aria-label="Window">
+        <button type="button" class="window-btn" data-window-action="minimize" title="Minimize" aria-label="Minimize">
+          <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path fill="currentColor" d="M1 5h8v1H1z"/></svg>
+        </button>
+        <button type="button" class="window-btn window-btn--close" data-window-action="close" title="Close" aria-label="Close">
+          <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path fill="currentColor" d="M1.2 2.1 2.1 1.2 5 4.1 7.9 1.2 8.8 2.1 5.9 5l2.9 2.9-.9.9L5 5.9 2.1 8.8l-.9-.9L4.1 5z"/></svg>
+        </button>
+      </div>
     </header>
 
     <main class="pad" id="pad" aria-label="Macro buttons"></main>
@@ -89,6 +108,23 @@
   <div class="toast hidden" id="toast" role="status"></div>
 
   <div class="ctx-menu hidden" id="ctx-menu" role="menu"></div>
+
+  <div class="onboarding-overlay hidden" id="onboarding-overlay" hidden>
+    <div class="onboarding-card" role="dialog" aria-labelledby="onboarding-title" aria-modal="true">
+      <h2 id="onboarding-title">Welcome to CmdDeck</h2>
+      <p class="onboarding-lead">An always-on-top command pad for one-click macros — run scripts, tools, and workflows without hunting for a terminal.</p>
+      <ol class="onboarding-steps">
+        <li><strong>Add macros</strong> — Use <code>+</code> to create buttons that run shell commands</li>
+        <li><strong>Pages &amp; profiles</strong> — Switch pages with the page control; profiles keep separate decks</li>
+        <li><strong>Macro packs</strong> — Open Settings to import or install built-in packs (Git, Docker, Laravel, and more)</li>
+      </ol>
+      <p class="onboarding-note">Right-click a button for edit / run options. Lock size, cols × rows, and transparency live in the title bar and Settings.</p>
+      <div class="onboarding-actions">
+        <button type="button" class="btn primary" id="btn-onboarding-start">Open Settings</button>
+        <button type="button" class="btn" id="btn-onboarding-dismiss">Got it</button>
+      </div>
+    </div>
+  </div>
 
   <script src="vendor/tauri-tray-bridge.js"></script>
   <script src="bridge/preload-bridge.js"></script>

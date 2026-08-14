@@ -8,7 +8,7 @@
 
   let macros = [];
   let deck = { profiles: [], activeProfileId: '', activeProfile: null, activePage: null };
-  let settings = { columns: 3, rows: 2, opacity: 0.94, alwaysOnTop: true, startMinimised: false, sizeLocked: false };
+  let settings = { columns: 3, rows: 2, opacity: 0.94, alwaysOnTop: true, startMinimised: false, sizeLocked: false, onboardingComplete: false };
   const profileSelect = document.getElementById('profile-select');
   const pageSelect = document.getElementById('page-select');
   const btnPagePrev = document.getElementById('btn-page-prev');
@@ -16,6 +16,9 @@
   const btnAddPage = document.getElementById('btn-add-page');
   const btnDeletePage = document.getElementById('btn-delete-page');
   const btnLock = document.getElementById('btn-lock');
+  const onboardingOverlay = document.getElementById('onboarding-overlay');
+  const btnOnboardingStart = document.getElementById('btn-onboarding-start');
+  const btnOnboardingDismiss = document.getElementById('btn-onboarding-dismiss');
   let running = new Set();
   let flash = new Map();
   let toastTimer = null;
@@ -406,6 +409,27 @@
     }
   }
 
+  function setOnboardingVisible(visible) {
+    if (!onboardingOverlay) return;
+    onboardingOverlay.classList.toggle('hidden', !visible);
+    onboardingOverlay.hidden = !visible;
+  }
+
+  function maybeShowOnboarding() {
+    setOnboardingVisible(settings.onboardingComplete !== true);
+  }
+
+  async function completeOnboarding({ openSettings: showSettings = false } = {}) {
+    settings = { ...settings, onboardingComplete: true };
+    setOnboardingVisible(false);
+    try {
+      await window.cmdDeck.setSettings({ onboardingComplete: true });
+    } catch (err) {
+      console.error(err);
+    }
+    if (showSettings) openSettings();
+  }
+
   function flashStatus(id, status) {
     flash.set(id, status);
     render();
@@ -426,9 +450,14 @@
     document.body.classList.add(`platform-${state.platform || 'win32'}`);
     if (state.dark) document.body.classList.add('dark');
 
+    if (globalThis.tauriTrayBridge?.bindWindowControls) {
+      globalThis.tauriTrayBridge.bindWindowControls(document);
+    }
+
     syncGridInputs();
     syncLockButton();
     render();
+    maybeShowOnboarding();
 
     window.cmdDeck.onMacrosChanged((next) => {
       macros = next || [];
@@ -443,6 +472,7 @@
       settings = next || settings;
       syncGridInputs();
       syncLockButton();
+      maybeShowOnboarding();
       render();
     });
 
@@ -520,6 +550,18 @@
     });
   }
 
+  if (btnOnboardingStart) {
+    btnOnboardingStart.addEventListener('click', () => {
+      completeOnboarding({ openSettings: true }).catch((err) => console.error(err));
+    });
+  }
+
+  if (btnOnboardingDismiss) {
+    btnOnboardingDismiss.addEventListener('click', () => {
+      completeOnboarding().catch((err) => console.error(err));
+    });
+  }
+
   document.getElementById('btn-add').addEventListener('click', () => openEditor());
   document.getElementById('btn-settings').addEventListener('click', openSettings);
   btnLock.addEventListener('click', async () => {
@@ -535,7 +577,13 @@
     }
   });
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') hideContextMenu();
+    if (event.key === 'Escape') {
+      if (onboardingOverlay && !onboardingOverlay.hidden) {
+        completeOnboarding().catch((err) => console.error(err));
+        return;
+      }
+      hideContextMenu();
+    }
   });
   window.addEventListener('blur', hideContextMenu);
   window.addEventListener('resize', hideContextMenu);

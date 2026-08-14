@@ -1,82 +1,21 @@
+/* Tokens + base come from vendor/shared-styles/index.css */
 :root {
-  color-scheme: light dark;
-  --bg: #f3f3f3;
-  --bg-elevated: #ffffff;
-  --bg-button: #e8e8ea;
-  --bg-button-hover: #dedee0;
-  --border: rgba(0, 0, 0, 0.08);
-  --text: #1c1c1e;
-  --text-secondary: rgba(28, 28, 30, 0.55);
-  --accent: #0078d4;
-  --accent-text: #ffffff;
-  --danger: #c42b1c;
-  --success: #0f7b0f;
-  --shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
-  --radius: 8px;
-  --radius-btn: 10px;
-  --font: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
-  --titlebar-h: 28px;
   --pad-gap: 4px;
   --control-h: 30px;
   --columns: 3;
   --rows: 1;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1c1c1e;
-    --bg-elevated: #2c2c2e;
-    --bg-button: #3a3a3c;
-    --bg-button-hover: #48484a;
-    --border: rgba(255, 255, 255, 0.1);
-    --text: #f5f5f7;
-    --text-secondary: rgba(245, 245, 247, 0.55);
-    --accent: #4cc2ff;
-    --accent-text: #00344d;
-    --danger: #ff6961;
-    --success: #32d74b;
-    --shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
-  }
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body {
-  height: 100%;
-  overflow: hidden;
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--text);
-  user-select: none;
-  -webkit-font-smoothing: antialiased;
-}
-
-body.platform-darwin {
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
-  --radius: 12px;
-  --radius-btn: 14px;
-  --accent: #0a84ff;
-  --accent-text: #ffffff;
-  --titlebar-h: 34px;
-  background: transparent;
-}
-
 body.platform-darwin .app {
-  background: rgba(246, 246, 246, 0.55);
+  background: rgba(244, 245, 247, 0.72);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
 }
 
 @media (prefers-color-scheme: dark) {
   body.platform-darwin .app {
-    background: rgba(28, 28, 30, 0.45);
+    background: rgba(15, 16, 17, 0.72);
   }
-}
-
-body.platform-win32 {
-  --accent: #0078d4;
 }
 
 .app {
@@ -85,6 +24,27 @@ body.platform-win32 {
   flex-direction: column;
   padding: 2px 6px 6px;
   gap: 2px;
+}
+
+.app.window-shell {
+  padding: 2px 0 6px;
+}
+
+.app.window-shell .titlebar {
+  padding-left: 6px;
+  padding-right: 0;
+}
+
+.app.window-shell .pad,
+.app.window-shell .hint {
+  margin-left: 6px;
+  margin-right: 6px;
+}
+
+body.platform-darwin .app.window-shell {
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .titlebar {
@@ -109,28 +69,24 @@ body.platform-darwin .titlebar-drag {
   padding-left: 58px;
 }
 
-.app-title {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+.drag-handle {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 22px;
+  margin-left: 2px;
   color: var(--text-secondary);
-  opacity: 0.75;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-body.platform-darwin .app-title {
-  width: auto;
-  text-align: left;
-  padding-right: 0;
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
 }
 
 .deck-nav {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: 8px;
+  margin-left: 4px;
   min-width: 0;
   flex: 1;
   overflow: hidden;
@@ -144,7 +100,7 @@ body.platform-darwin .app-title {
   height: 22px;
   border-radius: 6px;
   border: 1px solid var(--border);
-  background: var(--bg-button);
+  background: var(--bg-button-solid);
   color: var(--text);
   padding: 0 4px;
 }
@@ -355,7 +311,7 @@ body.platform-darwin .app-title {
 }
 
 .icon-btn:hover {
-  background: var(--bg-button);
+  background: var(--bg-button-solid);
   color: var(--text);
 }
 
@@ -409,7 +365,7 @@ body.platform-darwin .app-title {
   min-height: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-btn);
-  background: var(--bg-button);
+  background: var(--bg-button-solid);
   color: var(--text);
   cursor: pointer;
   position: relative;
@@ -420,15 +376,21 @@ body.platform-darwin .app-title {
   justify-content: center;
   gap: 2px;
   padding: 4px;
-  transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
+  transition:
+    transform var(--duration) var(--ease-out),
+    background var(--duration) var(--ease-out),
+    box-shadow var(--duration) var(--ease-out),
+    border-color var(--duration) var(--ease-out);
 }
 
 .macro-btn:hover {
-  background: var(--bg-button-hover);
+  background: var(--bg-button-hover-solid);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow);
 }
 
 .macro-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
 .macro-btn.has-image {
@@ -438,6 +400,7 @@ body.platform-darwin .app-title {
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
   border-color: transparent;
+  box-shadow: none;
 }
 
 .macro-btn.has-image::before {
@@ -477,15 +440,20 @@ body.platform-darwin .app-title {
 }
 
 .macro-btn.running {
-  box-shadow: inset 0 0 0 2px var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: var(--shadow-glow), inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .macro-btn.success {
-  box-shadow: inset 0 0 0 2px var(--success);
+  border-color: color-mix(in srgb, var(--success) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 35%, transparent),
+    0 0 22px color-mix(in srgb, var(--success) 28%, transparent);
 }
 
 .macro-btn.error {
-  box-shadow: inset 0 0 0 2px var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 35%, transparent),
+    0 0 22px color-mix(in srgb, var(--danger) 28%, transparent);
 }
 
 .macro-btn .spinner {
@@ -757,8 +725,11 @@ body.settings-page {
   z-index: 30;
   top: calc(100% + 4px);
   left: 0;
-  right: 0;
-  max-height: 220px;
+  right: auto;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(560px, 70vw);
+  max-height: 280px;
   overflow: auto;
   margin: 0;
   padding: 4px;
@@ -771,8 +742,9 @@ body.settings-page {
 
 .shell-picker-option {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
   width: 100%;
   border: none;
   border-radius: 7px;
@@ -795,7 +767,15 @@ body.settings-page {
 }
 
 .shell-picker-option .shell-picker-path {
-  flex: 1;
+  flex: none;
+  width: 100%;
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  opacity: 0.8;
 }
 
 
@@ -861,9 +841,9 @@ body.settings-page {
 .btn {
   height: var(--control-h);
   padding: 0 12px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: var(--bg-button);
+  background: var(--bg-button-solid);
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -873,7 +853,7 @@ body.settings-page {
 }
 
 .btn:hover {
-  background: var(--bg-button-hover);
+  background: var(--bg-button-hover-solid);
 }
 
 .btn.primary {
@@ -1058,7 +1038,7 @@ body.settings-page {
   cursor: pointer;
 }
 
-.settings-row + .settings-row {
+.settings-row+.settings-row {
   border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 
@@ -1177,6 +1157,84 @@ body.settings-page {
   opacity: 0.8;
 }
 
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: color-mix(in srgb, var(--bg) 35%, rgba(0, 0, 0, 0.48));
+}
+
+.onboarding-overlay.hidden {
+  display: none;
+}
+
+.onboarding-card {
+  width: min(420px, 100%);
+  max-height: calc(100% - 8px);
+  overflow: auto;
+  padding: 16px 16px 14px;
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.onboarding-card h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.onboarding-lead {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.onboarding-steps {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.onboarding-steps li+li {
+  margin-top: 6px;
+}
+
+.onboarding-steps code {
+  font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.onboarding-note {
+  margin: 0 0 14px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.onboarding-actions .btn {
+  flex: 1;
+  min-width: 0;
+}
+
 .toast {
   position: fixed;
   left: 50%;
@@ -1257,7 +1315,9 @@ body.settings-page {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes rise {
@@ -1265,6 +1325,7 @@ body.settings-page {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1274,6 +1335,7 @@ body.settings-page {
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--text) 20%, transparent);
   border-radius: 8px;
@@ -1314,7 +1376,8 @@ body.editor-page {
 }
 
 .ide-shell {
-  width: min(280px, 42vw);
+  width: min(420px, 52vw);
+  min-width: 220px;
 }
 
 .ide-shell .shell-picker-trigger {
@@ -1325,7 +1388,7 @@ body.editor-page {
 }
 
 .ide-shell .shell-picker-path {
-  max-width: 140px;
+  max-width: none;
 }
 
 .ide-toggle {

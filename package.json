@@ -8,6 +8,10 @@
   "repository": "https://github.com/taylorivanoff/cmd-deck",
   "license": "MIT",
   "scripts": {
+    "postinstall": "node scripts/sync-shared-styles.cjs",
+    "sync:styles": "node scripts/sync-shared-styles.cjs",
+    "predev": "node scripts/sync-shared-styles.cjs",
+    "prebuild": "node scripts/sync-shared-styles.cjs",
     "dev": "node scripts/run-tauri.cjs dev",
     "start": "node scripts/run-tauri.cjs dev",
     "build": "node scripts/run-tauri.cjs build",
@@ -17,6 +21,9 @@
     "icon": "node scripts/run-tauri.cjs icon resources/icon.png",
     "lint": "eslint renderer",
     "lint:fix": "eslint renderer --fix"
+  },
+  "dependencies": {
+    "@taylorivanoff/shared-styles": "file:../shared-styles"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

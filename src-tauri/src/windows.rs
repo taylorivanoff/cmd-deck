@@ -108,8 +108,8 @@ pub fn open_editor_window(app: &AppHandle, macro_id: Option<String>) {
     spawn_window(app.clone(), move |app| {
         let _ = WebviewWindowBuilder::new(app, EDITOR_LABEL, WebviewUrl::App(url.into()))
             .title(title)
-            .inner_size(820.0, 560.0)
-            .min_inner_size(640.0, 420.0)
+            .inner_size(892.0, 665.0)
+            .min_inner_size(892.0, 665.0)
             .resizable(true)
             .minimizable(false)
             .maximizable(false)

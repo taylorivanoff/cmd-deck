@@ -1,0 +1,95 @@
+:root {
+  color-scheme: light dark;
+
+  --bg: #f4f5f7;
+  --bg-elevated: #ffffff;
+  --bg-button: #ebedf0;
+  --bg-button-solid: #ebedf0;
+  --bg-button-hover: #e2e5e9;
+  --bg-button-hover-solid: #e2e5e9;
+  --bg-sunken: #e6e8ec;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --highlight: rgba(255, 255, 255, 0.7);
+  --glass: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.08);
+
+  --text: #0f1011;
+  --text-secondary: #6b6f76;
+
+  --accent: #0078d4;
+  --accent-hover: #006cbe;
+  --accent-muted: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent) 20%, transparent);
+  --accent-text: #ffffff;
+
+  --danger: #eb5757;
+  --success: #27a644;
+  --warning: #f2c94c;
+
+  --shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-lg:
+    0 0 0 1px rgba(0, 0, 0, 0.05),
+    0 16px 40px rgba(0, 0, 0, 0.12);
+  --shadow-glow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent),
+    0 0 20px var(--accent-glow);
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent);
+
+  --radius: 6px;
+  --radius-btn: 8px;
+  --font: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --titlebar-h: 28px;
+  --control-h: 26px;
+  --window-radius: 10px;
+  --window-control-size: 28px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --duration: 140ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1011;
+    --bg-elevated: #191a1d;
+    --bg-button: #23252a;
+    --bg-button-solid: #23252a;
+    --bg-button-hover: #2c2e34;
+    --bg-button-hover-solid: #2c2e34;
+    --bg-sunken: #090a0c;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --highlight: rgba(255, 255, 255, 0.06);
+    --glass: rgba(25, 26, 29, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.08);
+
+    --text: #f7f8f8;
+    --text-secondary: #8a8f98;
+
+    --accent: #4cc2ff;
+    --accent-hover: #6dceff;
+    --accent-muted: color-mix(in srgb, var(--accent) 16%, transparent);
+    --accent-glow: color-mix(in srgb, var(--accent) 24%, transparent);
+    --accent-text: #00344d;
+
+    --danger: #f2555a;
+    --success: #4cb782;
+    --warning: #f0c14a;
+
+    --shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.04),
+      0 1px 2px rgba(0, 0, 0, 0.35),
+      0 12px 32px rgba(0, 0, 0, 0.5);
+    --shadow-lg:
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 20px 48px rgba(0, 0, 0, 0.6);
+    --shadow-glow:
+      0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+      0 0 24px var(--accent-glow);
+    --ring: 0 0 0 2px var(--bg), 0 0 0 4px color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+}

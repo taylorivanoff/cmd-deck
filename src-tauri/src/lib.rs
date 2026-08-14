@@ -79,6 +79,7 @@ pub fn run() {
             defaults.insert("columns".into(), json!(3));
             defaults.insert("rows".into(), json!(2));
             defaults.insert("sizeLocked".into(), json!(false));
+            defaults.insert("onboardingComplete".into(), json!(false));
             defaults.insert("lanWebEnabled".into(), json!(false));
             defaults.insert("lanWebPort".into(), json!(8742));
 
@@ -130,6 +131,12 @@ pub fn run() {
             });
 
             if let Some(main) = app.get_webview_window(tauri_tray_base::MAIN_WINDOW_LABEL) {
+                #[cfg(windows)]
+                {
+                    let _ = main.set_decorations(false);
+                    let _ = main.set_shadow(true);
+                }
+
                 let locked = app
                     .try_state::<tauri_tray_base::TrayBaseState>()
                     .map(|s| {

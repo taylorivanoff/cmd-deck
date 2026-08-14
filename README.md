@@ -60,9 +60,11 @@ Bump the `version` in `package.json` and push to `master`. The GitHub Actions wo
 
 ## Example macros
 
-### Developer workflows
+These match the built-in starter packs in [`packs/`](packs/). Import a pack from the app, or copy a command below into a new macro.
 
-**Boot a project** (set cwd to the app; PowerShell / zsh):
+### Laravel Dev
+
+**Boot project** (set cwd to the app):
 
 ```bash
 git pull
@@ -72,136 +74,127 @@ php artisan migrate
 docker compose up -d
 ```
 
-**Start a coding session** (Laravel + Vite; enable Show terminal, or split into two buttons):
+**Artisan serve** / **Queue worker** / **Vite dev**:
 
 ```bash
-docker compose up -d
-php artisan queue:work &
+php artisan serve
+```
+
+```bash
+php artisan queue:work
+```
+
+```bash
 npm run dev
 ```
 
-**Ship check before PR** (set cwd to the repo):
+**PR check**:
 
 ```bash
 git status
 npm run lint
 npm test
-gh pr checks
 ```
 
-**GitHub public repository download counts and stars** (PowerShell; requires authenticated `gh`):
-
-```powershell
-gh repo list --visibility public --limit 1000 --json nameWithOwner,stargazerCount |
-  ConvertFrom-Json |
-  ForEach-Object {
-    $repo = $_.nameWithOwner
-    $stars = $_.stargazerCount
-    $downloads = 0
-    gh api "repos/$repo/releases" --paginate --jq '[.[].assets[].download_count] | add // 0' 2>$null |
-      ForEach-Object { $downloads += [int]$_ }
-    [pscustomobject]@{
-      Repo      = $repo
-      Stars     = $stars
-      Downloads = $downloads
-    }
-  } |
-  Sort-Object Downloads, Stars -Descending |
-  Format-Table -AutoSize
-```
-
-**Hotfix local data**:
+### Node Fullstack
 
 ```bash
-php artisan migrate:fresh --seed
-php artisan cache:clear
-php artisan config:clear
-php artisan view:clear
-```
-
-**Unstick a busy port, then serve** (PowerShell):
-
-```powershell
-Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue |
-  ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
-php artisan serve
-```
-
-**Unstick a busy port, then serve** (zsh):
-
-```bash
-lsof -ti:8000 | xargs kill 2>/dev/null
-php artisan serve
-```
-
-### Everyday workflows
-
-**Start workday** — open the tools you always need (Windows, PowerShell; edit URLs/apps):
-
-```powershell
-Start-Process "https://mail.google.com"
-Start-Process "https://calendar.google.com"
-Start-Process "https://github.com/notifications"
-Start-Process "slack://"
-code "$env:USERPROFILE\Projects"
-```
-
-**Start workday** (macOS, zsh):
-
-```bash
-open https://mail.google.com
-open https://calendar.google.com
-open https://github.com/notifications
-open -a Slack
-code ~/Projects
-```
-
-**Meeting prep** - pull notes folder + open call link (edit paths/URL):
-
-```powershell
-$notes = "$env:USERPROFILE\Documents\MeetingNotes"
-Start-Process explorer.exe $notes
-Start-Process "https://meet.google.com/your-room"
+npm install
 ```
 
 ```bash
-open ~/Documents/MeetingNotes
-open "https://meet.google.com/your-room"
-```
-
-**Client delivery zip** - stage today’s folder and compress (Windows, PowerShell; edit paths):
-
-```powershell
-$day = Get-Date -Format yyyy-MM-dd
-$src = "$env:USERPROFILE\Documents\Clients\Acme\Outgoing"
-$dst = "$env:USERPROFILE\Desktop\Acme-$day.zip"
-Compress-Archive -Path "$src\*" -DestinationPath $dst -Force
-explorer.exe /select,$dst
-```
-
-**Weekly project backup** (Windows, PowerShell):
-
-```powershell
-$src = "$env:USERPROFILE\Projects"
-$dst = "D:\Backups\Projects-$(Get-Date -Format yyyy-MM-dd)"
-New-Item -ItemType Directory -Force -Path $dst | Out-Null
-robocopy $src $dst /MIR /R:1 /W:1 /NFL /NDL /NJH /NJS
-Write-Host "Backup complete: $dst"
-```
-
-**Tidy Downloads older than 30 days** (Windows, PowerShell):
-
-```powershell
-$downloads = [Environment]::GetFolderPath("UserProfile") + "\Downloads"
-Get-ChildItem $downloads -File |
-  Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } |
-  Remove-Item -Force
-Write-Host "Old Downloads cleaned."
+npm run dev
 ```
 
 ```bash
-find ~/Downloads -type f -mtime +30 -delete
-echo "Old Downloads cleaned."
+npm test
+```
+
+```bash
+npm run lint
+```
+
+### Docker Compose
+
+```bash
+docker compose up -d
+```
+
+```bash
+docker compose logs -f --tail=200
+```
+
+```bash
+docker compose down
+```
+
+### Git Ship Check
+
+```bash
+git status
+```
+
+```bash
+git diff
+```
+
+```bash
+git push
+```
+
+### Daily Routines
+
+**Start workday** (PowerShell):
+
+```powershell
+Start-Process https://mail.google.com
+Start-Process https://calendar.google.com
+Start-Process https://github.com/notifications
+```
+
+**GitHub** — action type Open URL: `https://github.com`
+
+**Open Projects** — action type Open path: `{{env:USERPROFILE}}\Projects`
+
+**Tidy Downloads** (confirm before run):
+
+```powershell
+$downloads = [Environment]::GetFolderPath('UserProfile') + '\Downloads'
+Get-ChildItem $downloads -File | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } | Remove-Item -Force
+```
+
+### Streamer OBS Shell
+
+**Scene: Main** / **Scene: BRB** (edit OBS host/port and scene names):
+
+```bash
+curl -s -X POST http://127.0.0.1:4455/api/requests -H "Content-Type: application/json" -d "{\"requestType\":\"SetCurrentProgramScene\",\"requestData\":{\"sceneName\":\"Main\"}}"
+```
+
+```bash
+curl -s -X POST http://127.0.0.1:4455/api/requests -H "Content-Type: application/json" -d "{\"requestType\":\"SetCurrentProgramScene\",\"requestData\":{\"sceneName\":\"BRB\"}}"
+```
+
+**Open OBS** — action type Open URL: `obs64://`
+
+### Homelab SSH Starter
+
+SSH macros (edit host/user/key per machine). Commands run on the remote:
+
+```bash
+df -h
+```
+
+```bash
+docker ps
+```
+
+```bash
+cd ~/stack && docker compose restart
+```
+
+```bash
+sudo apt update && sudo apt upgrade -y
 ```
 
 ## Keywords

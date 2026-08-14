@@ -7,6 +7,7 @@
     content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Add Macro</title>
+  <link rel="stylesheet" href="vendor/shared-styles/index.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 
@@ -78,16 +79,6 @@
         </label>
 
         <label class="field">
-          <span>Action type</span>
-          <select id="field-action-type">
-            <option value="runCommand">Run command</option>
-            <option value="openUrl">Open URL</option>
-            <option value="openPath">Open path</option>
-            <option value="ssh">SSH remote</option>
-          </select>
-        </label>
-
-        <label class="field">
           <span>Global shortcut</span>
           <input type="text" id="field-shortcut" placeholder="Ctrl+Shift+1" />
         </label>
@@ -100,13 +91,6 @@
           <span>Confirm message</span>
           <input type="text" id="field-confirm-msg" placeholder="Run this macro?" />
         </label>
-
-        <div id="ssh-fields" class="hidden">
-          <label class="field"><span>SSH host</span><input type="text" id="field-ssh-host" /></label>
-          <label class="field"><span>SSH user</span><input type="text" id="field-ssh-user" /></label>
-          <label class="field"><span>SSH key path</span><input type="text" id="field-ssh-key" /></label>
-          <label class="field"><span>SSH port</span><input type="number" id="field-ssh-port" placeholder="22" /></label>
-        </div>
 
         <p class="ide-sidebar-hint" id="shell-hint">Uses this shell’s PATH and environment. Variables: {{date}}, {{cwd}}, {{env:VAR}}, {{gitBranch}}</p>
       </aside>
