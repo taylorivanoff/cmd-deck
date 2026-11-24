@@ -63,6 +63,7 @@ body.platform-darwin .app.window-shell {
   display: flex;
   align-items: center;
   -webkit-app-region: drag;
+  app-region: drag;
 }
 
 body.platform-darwin .titlebar-drag {
@@ -91,6 +92,7 @@ body.platform-darwin .titlebar-drag {
   flex: 1;
   overflow: hidden;
   -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 
 .deck-select {
@@ -197,6 +199,7 @@ body.platform-darwin .titlebar-drag {
   gap: 4px;
   flex-shrink: 0;
   -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 
 .titlebar-grid {
