@@ -236,17 +236,22 @@ pub fn packs_export_to_file(state: State<'_, AppState>, path: String, profile_id
 #[tauri::command]
 pub fn lan_get_info(app: AppHandle, tray: State<'_, TrayBaseState>) -> Value {
     let token = web_server::ensure_token(&app);
+    let server = app.state::<web_server::WebServerState>();
     let settings = tray.settings.lock();
     let enabled = settings
         .extra
         .get("lanWebEnabled")
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
-    let port = settings
+    let configured_port = settings
         .extra
         .get("lanWebPort")
         .and_then(|v| v.as_u64())
         .unwrap_or(8742);
+    let port = match server.port.load(std::sync::atomic::Ordering::SeqCst) {
+        0 => configured_port,
+        actual_port => actual_port as u64,
+    };
     json!({ "enabled": enabled, "port": port, "token": token })
 }
 

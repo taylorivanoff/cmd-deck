@@ -1,4 +1,6 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::io;
+use std::net::{IpAddr, SocketAddr, TcpListener as StdTcpListener};
+use std::sync::atomic::{AtomicBool, AtomicU16, Ordering};
 
 use axum::{
     extract::{Query, State},
@@ -19,6 +21,7 @@ use crate::store;
 
 pub struct WebServerState {
     pub running: AtomicBool,
+    pub port: AtomicU16,
     pub shutdown: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
@@ -26,6 +29,7 @@ impl WebServerState {
     pub fn new() -> Self {
         Self {
             running: AtomicBool::new(false),
+            port: AtomicU16::new(0),
             shutdown: Mutex::new(None),
         }
     }
@@ -152,15 +156,24 @@ pub fn start(app: &AppHandle, port: u16) -> Result<(), String> {
         .route("/api/stop", post(api_stop_handler))
         .with_state(api);
 
-    let addr = format!("0.0.0.0:{port}");
+    let (std_listener, addr) = bind_available(IpAddr::from([0, 0, 0, 0]), port)
+        .map_err(|error| format!("bind lan web server: {error}"))?;
+    if port != 0 && addr.port() != port {
+        crate::logger::add_log(
+            app,
+            "warn",
+            &format!("LAN web port {port} is in use; using port {} instead", addr.port()),
+            None,
+        );
+    }
+    server_state.port.store(addr.port(), Ordering::SeqCst);
     server_state.running.store(true, Ordering::SeqCst);
 
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
         rt.block_on(async {
-            let listener = tokio::net::TcpListener::bind(&addr)
-                .await
-                .expect("bind lan web server");
+            let listener = tokio::net::TcpListener::from_std(std_listener)
+                .expect("configure lan web server listener");
             axum::serve(listener, router)
                 .with_graceful_shutdown(async {
                     let _ = rx.await;
@@ -179,6 +192,24 @@ pub fn stop(app: &AppHandle) {
         let _ = tx.send(());
     }
     server_state.running.store(false, Ordering::SeqCst);
+    server_state.port.store(0, Ordering::SeqCst);
+}
+
+fn bind_available(host: IpAddr, requested_port: u16) -> io::Result<(StdTcpListener, SocketAddr)> {
+    for offset in 0..=u16::MAX {
+        let port = requested_port.wrapping_add(offset);
+        match StdTcpListener::bind(SocketAddr::from((host, port))) {
+            Ok(listener) => {
+                let addr = listener.local_addr()?;
+                listener.set_nonblocking(true)?;
+                return Ok((listener, addr));
+            }
+            Err(error) if error.kind() == io::ErrorKind::AddrInUse => {}
+            Err(error) => return Err(error),
+        }
+    }
+
+    unreachable!("all TCP ports are unavailable")
 }
 
 pub fn sync_from_settings(app: &AppHandle) {
