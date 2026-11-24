@@ -23,6 +23,15 @@ fn get_setting_bool(state: &TrayBaseState, key: &str, default: bool) -> bool {
         .unwrap_or(default)
 }
 
+fn grid_from_merged_settings(settings: &Value) -> (u32, u32) {
+    let cols = settings
+        .get("columns")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(3) as u32;
+    let rows = settings.get("rows").and_then(|v| v.as_u64()).unwrap_or(2) as u32;
+    (cols, rows)
+}
+
 pub fn settings_set_extra(app: &AppHandle, partial: Value) -> Result<Value, String> {
     let tray = app.state::<TrayBaseState>();
     settings_set(app.clone(), tray, partial)
@@ -61,14 +70,9 @@ pub fn settings_set(
     }
 
     if partial.get("columns").is_some() || partial.get("rows").is_some() {
-        let cols = partial
-            .get("columns")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(3) as u32;
-        let rows = partial
-            .get("rows")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(2) as u32;
+        // Use the merged settings so a one-key update keeps the current value
+        // of the other dimension instead of resetting it to a default.
+        let (cols, rows) = grid_from_merged_settings(&next);
         let app_state = app.state::<AppState>();
         store::update_profile_grid(&app_state, cols, rows);
         store::broadcast_deck(&app, &app_state);
@@ -631,4 +635,31 @@ pub(crate) fn confirm_delete(app: &AppHandle, message: &str) -> bool {
             .blocking_show_with_result(),
         MessageDialogResult::Custom(ref s) if s == "Delete"
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::grid_from_merged_settings;
+    use serde_json::json;
+
+    #[test]
+    fn grid_update_uses_both_merged_dimensions() {
+        assert_eq!(
+            grid_from_merged_settings(&json!({ "columns": 5, "rows": 4 })),
+            (5, 4)
+        );
+    }
+
+    #[test]
+    fn grid_update_keeps_current_value_for_missing_dimension() {
+        // These mirror the merged settings after a one-key update from the UI.
+        assert_eq!(
+            grid_from_merged_settings(&json!({ "columns": 5, "rows": 2 })),
+            (5, 2)
+        );
+        assert_eq!(
+            grid_from_merged_settings(&json!({ "columns": 3, "rows": 6 })),
+            (3, 6)
+        );
+    }
 }
