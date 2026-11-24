@@ -1271,6 +1271,114 @@ body.settings-page {
   min-width: 0;
 }
 
+.packs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: color-mix(in srgb, var(--bg) 35%, rgba(0, 0, 0, 0.55));
+}
+
+.packs-overlay.hidden {
+  display: none;
+}
+
+.packs-dialog {
+  width: min(380px, 100%);
+  max-height: calc(100% - 8px);
+  overflow: auto;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.packs-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.packs-dialog-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.packs-dialog-head .icon-btn {
+  margin-left: auto;
+}
+
+.packs-dialog-lead {
+  margin: 8px 0 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.packs-field {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.packs-select {
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin-top: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-button-solid);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color var(--duration) var(--ease-out),
+    border-color var(--duration) var(--ease-out),
+    box-shadow var(--duration) var(--ease-out);
+}
+
+.packs-select:hover:not(:disabled) {
+  background: var(--bg-button-hover-solid);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.packs-select:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.packs-dialog-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.packs-dialog-actions .btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.packs-dialog-status {
+  min-height: 14px;
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+.packs-dialog-status.error {
+  color: var(--danger);
+}
+
 .toast {
   position: fixed;
   left: 50%;

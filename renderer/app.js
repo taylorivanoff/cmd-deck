@@ -19,6 +19,9 @@
   const onboardingOverlay = document.getElementById('onboarding-overlay');
   const btnOnboardingStart = document.getElementById('btn-onboarding-start');
   const btnOnboardingDismiss = document.getElementById('btn-onboarding-dismiss');
+  const packsOverlay = document.getElementById('packs-overlay');
+  const packsList = document.getElementById('packs-list');
+  const packsStatus = document.getElementById('packs-status');
   let running = new Set();
   let flash = new Map();
   let toastTimer = null;
@@ -415,6 +418,52 @@
     onboardingOverlay.hidden = !visible;
   }
 
+  function setPacksStatus(message, isError = false) {
+    packsStatus.textContent = message || '';
+    packsStatus.classList.toggle('error', !!isError);
+  }
+
+  function setPacksVisible(visible) {
+    packsOverlay.classList.toggle('hidden', !visible);
+    packsOverlay.hidden = !visible;
+    if (!visible) return;
+    setPacksStatus('');
+    loadBuiltInPacks().catch((err) => {
+      console.error(err);
+      setPacksStatus('Could not load packs.', true);
+    });
+  }
+
+  async function loadBuiltInPacks() {
+    const packs = await window.cmdDeck.listPacks();
+    packsList.innerHTML = '';
+    for (const pack of packs || []) {
+      const opt = document.createElement('option');
+      opt.value = pack.path;
+      opt.textContent = pack.name + (pack.description ? ` — ${pack.description}` : '');
+      packsList.appendChild(opt);
+    }
+    if (!packs || packs.length === 0) {
+      setPacksStatus('No built-in packs found.', true);
+    }
+  }
+
+  async function installPackFromPath(path) {
+    if (!path) return;
+    setPacksStatus('Installing pack…');
+    try {
+      const result = await window.cmdDeck.importPackFile(path, 'merge');
+      if (result?.error) {
+        setPacksStatus(result.error, true);
+        return;
+      }
+      setPacksStatus('Pack installed.');
+    } catch (err) {
+      console.error(err);
+      setPacksStatus('Could not install pack.', true);
+    }
+  }
+
   function maybeShowOnboarding() {
     setOnboardingVisible(settings.onboardingComplete !== true);
   }
@@ -564,7 +613,27 @@
 
   document.getElementById('btn-add').addEventListener('click', () => openEditor());
   document.getElementById('btn-settings').addEventListener('click', openSettings);
-  document.getElementById('btn-packs').addEventListener('click', openSettings);
+  document.getElementById('btn-packs').addEventListener('click', () => setPacksVisible(true));
+  document.getElementById('btn-packs-close').addEventListener('click', () => setPacksVisible(false));
+  document.getElementById('btn-packs-install').addEventListener('click', () => {
+    if (!packsList.value) {
+      setPacksStatus('Choose a pack first.', true);
+      return;
+    }
+    installPackFromPath(packsList.value);
+  });
+  document.getElementById('btn-packs-import').addEventListener('click', async () => {
+    try {
+      const path = await window.cmdDeck.pickPack();
+      await installPackFromPath(path);
+    } catch (err) {
+      console.error(err);
+      setPacksStatus('Could not choose a pack file.', true);
+    }
+  });
+  packsOverlay.addEventListener('click', (event) => {
+    if (event.target === packsOverlay) setPacksVisible(false);
+  });
   btnLock.addEventListener('click', async () => {
     const next = settings.sizeLocked === false;
     settings = { ...settings, sizeLocked: next };
@@ -579,6 +648,10 @@
   });
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
+      if (packsOverlay && !packsOverlay.hidden) {
+        setPacksVisible(false);
+        return;
+      }
       if (onboardingOverlay && !onboardingOverlay.hidden) {
         completeOnboarding().catch((err) => console.error(err));
         return;
