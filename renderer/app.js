@@ -564,6 +564,7 @@
 
   document.getElementById('btn-add').addEventListener('click', () => openEditor());
   document.getElementById('btn-settings').addEventListener('click', openSettings);
+  document.getElementById('btn-packs').addEventListener('click', openSettings);
   btnLock.addEventListener('click', async () => {
     const next = settings.sizeLocked === false;
     settings = { ...settings, sizeLocked: next };

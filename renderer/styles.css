@@ -105,6 +105,26 @@ body.platform-darwin .titlebar-drag {
   background: var(--bg-button-solid);
   color: var(--text);
   padding: 0 4px;
+  cursor: pointer;
+  transition:
+    background-color var(--duration) var(--ease-out),
+    border-color var(--duration) var(--ease-out),
+    box-shadow var(--duration) var(--ease-out);
+}
+
+.deck-select:hover:not(:disabled) {
+  background: var(--bg-button-hover-solid);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.deck-select:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.deck-select:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .page-switcher {
@@ -1130,11 +1150,24 @@ body.settings-page {
   padding: 0 6px;
   outline: none;
   cursor: pointer;
+  transition:
+    background-color var(--duration) var(--ease-out),
+    border-color var(--duration) var(--ease-out),
+    box-shadow var(--duration) var(--ease-out);
+}
+
+.settings-pack-row select:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
 }
 
 .settings-pack-row select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.settings-pack-row select:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .settings-pack-row .btn {
